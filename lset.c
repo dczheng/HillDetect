@@ -231,5 +231,7 @@ void lset() {
 
     }
 
+    lset_free();    
+
 }
 

@@ -62,9 +62,7 @@ int main( int argc, char **argv ) {
                 sigma_clipping();
 
             normalize();
-            lset_init();
             lset();
-            lset_free();
 
             free_fits();
         }
