@@ -1,0 +1,17 @@
+Mu          1
+Nu          0
+Tol         1e-5
+MaxIters    10000
+Lambda1     1
+Lambda2     1
+TimeStep    0.1
+
+LogNorm     0
+
+FileNameList  ./filelist.txt
+OutputDir   ./outputs
+InputDir    ./data_fits
+IsSavePhi   0
+PhiDir      ./Phi
+RSigma       1
+SigmaClipping       1

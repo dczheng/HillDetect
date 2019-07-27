@@ -1,0 +1,9 @@
+*.zip
+*png*
+*tar
+outputs/
+Phi/
+data_fits/
+*.o
+*.txt
+bin/
