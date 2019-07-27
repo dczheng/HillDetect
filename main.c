@@ -12,7 +12,6 @@ void init_sep_str() {
 }
 
 void global_free() {
-    free( Phi );
     free( AllFileNames );
 }
 

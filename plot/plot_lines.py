@@ -21,7 +21,7 @@ png_dir = './pngs/'
 N = len(lines)
 dn = 10
 i = 0
-while( i<N-1 ):
+while i<N-1:
     x = [ int(v) for v in lines[i].split() ]
     y = [ int(v) for v in lines[i+1].split() ]
     ii = x[0]
