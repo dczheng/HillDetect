@@ -146,6 +146,10 @@ void lset_free() {
 #define DIVIDE_EPS 1e-16
 void lset() {
 
+    /*
+      This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
+    */
+
     const long NumPixels = Width * Height;
     const long NumEl = NumPixels;
     const double *fPtr;
