@@ -55,7 +55,7 @@ void save_phi( int iter ) {
     fclose( fd );
 }
 
-void save_line( int iter ) {
+void save_line( int iter, double c1, double c2 ) {
 
     int i,j;
     long index;
@@ -81,7 +81,7 @@ void save_line( int iter ) {
     //printf( "edgen: %li\n", edgen );
 
 #define myprintf( xy ) { \
-    fprintf( fd_lines, "%i %li ", iter, edgen ); \
+    fprintf( fd_lines, "%i %li %g %g ", iter, edgen, c1, c2 ); \
     for( index=0; index<edgen; index++ ) { \
         fprintf( fd_lines, "%i ", xy[index] ); \
     } \
@@ -224,7 +224,7 @@ void lset() {
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
             break;
 
-        save_line( Iter );
+        save_line( Iter, c1, c2 );
 
         if ( All.IsSavePhi )
             save_phi(Iter);
