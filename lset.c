@@ -35,6 +35,21 @@ void get_c1_c2( double *c1, double *c2 ) {
 
 }
 
+void get_s1_s2( double *s1, double *s2 ) {
+
+    long i;
+    *s1 = *s2 = 0;
+    for( i=0; i<Npixs; i++ ) {
+        if ( Phi[i] > 0 ) {
+            *s1 += Data[i];
+        }
+        else {
+            *s2 += Data[i];
+        }
+    }
+
+}
+
 void save_phi( int iter ) {
 
     char buf[110];
@@ -55,10 +70,12 @@ void save_phi( int iter ) {
     fclose( fd );
 }
 
-void save_line( int iter, double c1, double c2 ) {
+void save_line( int iter ) {
 
     int i,j;
     long index;
+    double s1, s2;
+    get_s1_s2( &s1, &s2 );
 
     for( i=0, index=0, edgen=0; i<Height; i++ ) {
         for( j=0; j<Width; j++, index++) {
@@ -81,7 +98,7 @@ void save_line( int iter, double c1, double c2 ) {
     //printf( "edgen: %li\n", edgen );
 
 #define myprintf( xy ) { \
-    fprintf( fd_lines, "%i %li %g %g ", iter, edgen, c1, c2 ); \
+    fprintf( fd_lines, "%i %li %g %g ", iter, edgen, s1, s2 ); \
     for( index=0; index<edgen; index++ ) { \
         fprintf( fd_lines, "%i ", xy[index] ); \
     } \
@@ -225,7 +242,7 @@ void lset() {
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
             break;
 
-        save_line( Iter, c1, c2 );
+        save_line( Iter );
 
         if ( All.IsSavePhi )
             save_phi(Iter);
