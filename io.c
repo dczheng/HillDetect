@@ -32,7 +32,6 @@ void read_fits( char *fits_fn ) {
     //printf( "na: %li\n", na );
 
     Data = (double*)malloc(na*sizeof(double));
-    Data = (double*)malloc(na*sizeof(double));
     fits_read_pix(ffp, TDOUBLE, start_pos, na, 0,
             Data, &anynull, &status);
 
