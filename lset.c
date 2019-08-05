@@ -132,6 +132,7 @@ void lset_init() {
      sprintf( buf, "%s/%s.out", All.OutputDir, FileName );
      //printf( "%s\n", buf );
      fd_lines = fopen( buf, "w" );
+     init_phi();
 
 }
 
@@ -164,7 +165,7 @@ void lset() {
     PhiDiffNorm = (All.Tol > 0) ? All.Tol*1000 : 1000;
     dt = All.TimeStep;
 
-    init_phi();
+    lset_init();
 
     get_c1_c2( &c1, &c2 );
 
