@@ -29,8 +29,8 @@ while i<N-1:
         continue
     print( 'iter: %i, n: %i'%(x[0], x[1]) )
 
-    x = x[2:]
-    y = y[2:]
+    x = x[4:]
+    y = y[4:]
     plt.imshow( fits_data, norm=mplc.LogNorm() )
     ax = plt.gca()
     ax.invert_yaxis()
