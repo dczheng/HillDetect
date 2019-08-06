@@ -183,7 +183,6 @@ void lset() {
     dt = All.TimeStep;
 
     lset_init();
-
     get_c1_c2( &c1, &c2 );
 
     for(Iter = 1; Iter <= All.MaxIters; Iter++)
