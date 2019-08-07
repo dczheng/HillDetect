@@ -1,9 +1,12 @@
 *.zip
 *png*
 *tar
-outputs/
+*outputs*
 Phi/
 data_fits/
 *.o
 *.txt
 bin/
+*dat
+*txt
+*fits*

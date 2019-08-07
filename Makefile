@@ -1,4 +1,4 @@
-LIBS       =  -lcfitsio -lm
+LIBS       =  -lcfitsio -lm -ldrfftw -ldfftw
 INCL       = 
 OPTS       = -Wall #-O2 #-O3
 DEBUG     ?=

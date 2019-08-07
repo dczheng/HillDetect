@@ -6,12 +6,13 @@ Lambda1     1
 Lambda2     1
 TimeStep    0.1
 
-LogNorm     0
+LogNorm     1
 
 FileNameList  ./filelist.txt
-OutputDir   ./outputs
-InputDir    ./data_fits
+OutputDir   ./test_outputs
+InputDir    ./test_fits
 IsSavePhi   0
 PhiDir      ./Phi
 RSigma       1
 SigmaClipping       1
+FTClipping 1

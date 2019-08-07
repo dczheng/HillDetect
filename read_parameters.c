@@ -62,6 +62,7 @@ void read_parameters( char *fn ) {
         ADD_PARAI( All.IsSavePhi );
         ADD_PARAI( All.LogNorm );
         ADD_PARAI( All.SigmaClipping );
+        ADD_PARAI( All.FTClipping );
     
         while( !feof( fd ) ) {
             *buf = 0;

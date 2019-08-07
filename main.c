@@ -58,10 +58,8 @@ int main( int argc, char **argv ) {
 
             read_fits( buf );
 
-            if ( All.SigmaClipping )
-                sigma_clipping();
+            pre_proc();
 
-            normalize();
             lset();
 
             free_fits();

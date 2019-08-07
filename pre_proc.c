@@ -4,6 +4,7 @@
 */
 
 #include "allvars.h"
+#include "drfftw.h"
 
 void sigma_clipping() {
 
@@ -86,4 +87,85 @@ void normalize() {
             Data[i] = ( Data[i] - vmin ) / dv;
     }
 
+}
+
+void ft_clipping(){
+
+    int i, j, N2;
+    FILE *fd;
+    double fac;
+    fd = fopen( "t.dat", "w" );
+    for( i=0; i<Height; i++ ) {
+        for( j=0; j<Width; j++ )
+            fprintf( fd, "%g ", Data[i*Width+j] );
+        fprintf( fd, "\n" );
+    }
+    fclose( fd );
+
+    fftw_real *img;
+    fftw_complex *fft_of_img;
+    rfftwnd_plan fft_plan, fft_plan_inv;
+
+    N2 = 2 * ( Width/2+1 );
+    img = malloc( sizeof(fftw_real) * Height * N2 ) ;
+    fft_of_img = ( fftw_complex* ) img;
+
+    for( i=0; i<Height; i++ )
+        for ( j=0; j<Width; j++ )
+            img[i*N2+j] = log(Data[i*Width+j]);
+
+    fft_plan     = rfftw2d_create_plan( Height, Width, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE );
+    fft_plan_inv = rfftw2d_create_plan( Height, Width, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE );
+
+    rfftwnd_one_real_to_complex( fft_plan, img, NULL );
+
+    fac = 0.05;
+    fd = fopen( "fft.dat", "w" );
+    for( i=0; i<Height; i++ ) {
+        for( j=0; j<N2/2; j++ ) {
+            if ( i < Height*fac && j < N2/2*fac ) 
+                fft_of_img[i*N2/2+j].re = fft_of_img[i*N2/2+j].im = 0;
+            fprintf( fd, "%g ", 
+                    sqrt(
+                    SQR(fft_of_img[i*N2/2+j].re)
+                   +SQR(fft_of_img[i*N2/2+j].im)
+                        ) / Npixs
+                    );
+        }
+            fprintf( fd, "\n" );
+    }
+    fclose( fd );
+
+    rfftwnd_one_complex_to_real( fft_plan_inv, fft_of_img, NULL );
+
+    rfftwnd_destroy_plan( fft_plan );
+    rfftwnd_destroy_plan( fft_plan_inv );
+
+    for( i=0; i<Height; i++ )
+        for ( j=0; j<Width; j++ )
+            Data[i*Width+j] = img[i*N2+j] / Npixs;
+
+    fd = fopen( "tt.dat", "w" );
+    for( i=0; i<Height; i++ ) {
+        for( j=0; j<Width; j++ )
+            fprintf( fd, "%g ", exp(Data[i*Width+j]) );
+        fprintf( fd, "\n" );
+    }
+    fclose( fd );
+
+    endrun(0);
+
+    
+}
+
+void pre_proc() {
+    
+    if ( All.FTClipping )
+        ft_clipping();
+
+    if ( All.SigmaClipping )
+        sigma_clipping();
+
+
+    normalize();
 }

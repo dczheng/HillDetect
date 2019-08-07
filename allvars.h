@@ -30,7 +30,7 @@ extern struct global_parameters_struct {
          PhiDir[ MYFILENAME_MAX ],
          FileNameList[ MYFILENAME_MAX ];
 
-    int  LogNorm, MaxIters, IsSavePhi, SigmaClipping;
+    int  LogNorm, MaxIters, IsSavePhi, SigmaClipping, FTClipping;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma; 
 
 }All;
