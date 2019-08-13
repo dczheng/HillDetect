@@ -13,6 +13,6 @@ OutputDir   ./test_outputs
 InputDir    ./test_fits
 IsSavePhi   0
 PhiDir      ./Phi
-RSigma       1
+RSigma      0.5 
 SigmaClipping       1
 FTClipping 1

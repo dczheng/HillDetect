@@ -49,7 +49,7 @@ void read_file_names() {
     FILE *fd;
     char buf[MYFILENAME_MAX];
     int i;
-    FileNum = -1;
+    FileNum = 0;
     if ( ThisTask == 0 ) {
         fd = fopen( All.FileNameList, "r" );
         if ( NULL == fd )

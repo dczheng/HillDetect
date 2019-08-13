@@ -14,6 +14,8 @@ $(EXEC): $(OBJS)
 
 %.o:%.c $(MY_INCL) Makefile
 	$(CC) $(OPTS) $(DEBUG) $(INCL) -c $< -o $@
+test: $(EXEC)
+	./bin/fgext ./example.in
 
 .PHONY: clean
 

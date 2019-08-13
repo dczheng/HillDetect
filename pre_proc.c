@@ -93,7 +93,7 @@ void ft_clipping(){
 
     int i, j, N2;
     FILE *fd;
-    double fac;
+    double fac, k;
     fd = fopen( "t.dat", "w" );
     for( i=0; i<Height; i++ ) {
         for( j=0; j<Width; j++ )
@@ -112,19 +112,26 @@ void ft_clipping(){
 
     for( i=0; i<Height; i++ )
         for ( j=0; j<Width; j++ )
-            img[i*N2+j] = log(Data[i*Width+j]);
+            //img[i*N2+j] = log(Data[i*Width+j]);
+            img[i*N2+j] = Data[i*Width+j];
 
     fft_plan     = rfftw2d_create_plan( Height, Width, FFTW_REAL_TO_COMPLEX, FFTW_ESTIMATE | FFTW_IN_PLACE );
     fft_plan_inv = rfftw2d_create_plan( Height, Width, FFTW_COMPLEX_TO_REAL, FFTW_ESTIMATE | FFTW_IN_PLACE );
 
     rfftwnd_one_real_to_complex( fft_plan, img, NULL );
 
-    fac = 0.05;
+    fac = 0.01;
     fd = fopen( "fft.dat", "w" );
     for( i=0; i<Height; i++ ) {
         for( j=0; j<N2/2; j++ ) {
-            if ( i < Height*fac && j < N2/2*fac ) 
+
+            if ( i > Height/2 )
+                k = sqrt( SQR(i-Height) + SQR(j) );
+            else
+                k = sqrt( SQR(i) + SQR(j) );
+            if ( k < Height/2 * fac )
                 fft_of_img[i*N2/2+j].re = fft_of_img[i*N2/2+j].im = 0;
+
             fprintf( fd, "%g ", 
                     sqrt(
                     SQR(fft_of_img[i*N2/2+j].re)
@@ -132,7 +139,7 @@ void ft_clipping(){
                         ) / Npixs
                     );
         }
-            fprintf( fd, "\n" );
+        fprintf( fd, "\n" );
     }
     fclose( fd );
 
@@ -148,13 +155,12 @@ void ft_clipping(){
     fd = fopen( "tt.dat", "w" );
     for( i=0; i<Height; i++ ) {
         for( j=0; j<Width; j++ )
-            fprintf( fd, "%g ", exp(Data[i*Width+j]) );
+            fprintf( fd, "%g ", Data[i*Width+j] );
         fprintf( fd, "\n" );
     }
     fclose( fd );
 
-    endrun(0);
-
+    //endrun(0);
     
 }
 
