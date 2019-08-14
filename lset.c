@@ -238,6 +238,7 @@ void lset() {
                 Iter, PhiDiffNorm, c1, c2 );
 
         save_line( Iter );
+        find_region( Iter );
 
         if ( All.IsSavePhi )
             save_phi(Iter);
@@ -247,7 +248,6 @@ void lset() {
 
     }
 
-        find_region( Iter );
 
 
     lset_free();    
