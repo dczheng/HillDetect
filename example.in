@@ -18,4 +18,4 @@ SigmaClipping       1
 FTClipping 1
 
 DataCutting         1
-DataCutRatio         0.2
+DataCutRatio         0.3

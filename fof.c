@@ -349,6 +349,43 @@ void fof_catalog_save( int iter ) {
     fclose(fd);
 }
 
+void fof_ds9_region_save( int iter ) {
+
+    char buf[100];
+    FILE *fd;
+    long i, p, l;
+    int xi, yi;
+
+    char *h_ds9 ="# Region file format: DS9 version 4.1 \n" \
+        "global color=green dashlist=8 3 width=1 font=\"helvetica 10 normal roman\" " \
+        "select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1 \n" \
+        "image\n\n";
+
+    if ( ThisTask == 0 )
+        printf( "save ds9 region ...\n" );
+
+    sprintf( buf, "%s/%s_ds9_region_%04i.reg", All.OutputDir, FileName, iter );
+    fd = fopen( buf, "w" );
+    fprintf( fd, h_ds9 );
+
+    for( i=0; i<NfofEdge; i++ ) {
+        fprintf( fd, "polygon(" );
+        p = Head[i];
+        for( l=0; l<Len[i]; l++ ) {
+            xi = p % Width;
+            yi = p / Width;
+            if ( l == Len[i]-1 )
+                fprintf( fd, "%i,%i",  xi, yi );
+            else 
+                fprintf( fd, "%i,%i,",  xi, yi );
+            p = Next[p];
+        }
+        fprintf( fd, ")\n" );
+    }
+        
+    fclose(fd);
+}
+
 void find_region( int iter ) {
 
     if ( ThisTask == 0 )
@@ -356,6 +393,7 @@ void find_region( int iter ) {
     fof_reset();
     fof_edge();
     fof_edge_save( iter );
+    fof_ds9_region_save( iter );
 
     fof_reset();
     fof_region();
