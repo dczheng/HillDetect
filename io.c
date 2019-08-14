@@ -9,8 +9,8 @@ void read_fits( char *fits_fn ) {
 
     fitsfile *ffp;
 #define MAXDIMS 8
-    int naxis, status=0, i, bitpix, anynull;
-    long naxes[MAXDIMS], na, start_pos[MAXDIMS];
+    int naxis, status=0, bitpix, anynull;
+    long naxes[MAXDIMS], na, start_pos[MAXDIMS], i;
 
     //printf( "read fits data...\n" );
     for( i=0; i<MAXDIMS; i++ )
@@ -31,9 +31,20 @@ void read_fits( char *fits_fn ) {
     //printf( "BITPIX: %i\n", bitpix );
     //printf( "na: %li\n", na );
 
+    //float *tmp;
+    //tmp = (float*)malloc(na*sizeof(float));
     Data = (double*)malloc(na*sizeof(double));
+
+
     fits_read_pix(ffp, TDOUBLE, start_pos, na, 0,
             Data, &anynull, &status);
+    //fits_read_pix(ffp, TFLOAT, start_pos, na, 0,
+    //        tmp, &anynull, &status);
+    //for( i=0; i<na; i++ ) {
+    //    Data[i] = tmp[i];
+    //}
+
+    //myfree(tmp);
 
     fits_close_file(ffp, &status);
     fits_report_error(stderr, status);
@@ -41,6 +52,14 @@ void read_fits( char *fits_fn ) {
     Width = naxes[0];
     Height = naxes[1];
     Npixs = naxes[0] * naxes[1];
+
+    //print_data( Data, 230, 290, 580, 640, 0 );
+
+    DataRaw = (double*)malloc(na*sizeof(double));
+    for( i=0; i<Npixs; i++ )
+        DataRaw[i] = Data[i];
+
+    //print_data( DataRaw, 230, 640, 580, 640, 0 );
 
 }
 
@@ -54,13 +73,13 @@ void read_file_names() {
         fd = fopen( All.FileNameList, "r" );
         if ( NULL == fd )
             endrun( 20190727 );
-        while( !feof( fd ) ) {
+        do {
             fgets( buf, MYFILENAME_MAX, fd );
             FileNum ++;
-        }
+        } while( !feof( fd ) );
+        FileNum -= 1;
         fclose( fd );
     }
-
 
     MPI_Bcast( &FileNum, 1, MPI_INT, 0, MPI_COMM_WORLD );
 
@@ -87,4 +106,5 @@ void read_file_names() {
 
 void free_fits(){
     free( Data );
+    free( DataRaw );
 }

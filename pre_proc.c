@@ -40,6 +40,22 @@ void sigma_clipping() {
 
 }
 
+void data_cuting( double r ) {
+    /* only for test */
+    int i, j, h, w;
+    h = Height * r;
+    w = Width * r;
+    //printf( "%i %i %i %i\n", Height, Width, h, w  );
+    for( i=0; i<h; i++ )
+        for ( j=0; j<w; j++ ) {
+            Data[i*w+j] = Data[i*Width+j];
+            DataRaw[i*w+j] = DataRaw[i*Width+j];
+        }
+   Height = h;
+   Width = w;
+   Npixs = h * w;
+}
+
 void normalize() {
 
     double vmin, vmax, dv;
@@ -60,7 +76,6 @@ void normalize() {
         else {
             vmin = ( vmin < Data[i] ) ? vmin : Data[i];
         } 
-
         vmax = ( vmax > Data[i] ) ? vmax : Data[i];
     }
 
@@ -172,6 +187,10 @@ void pre_proc() {
     if ( All.SigmaClipping )
         sigma_clipping();
 
-
+    if ( All.DataCutting &&
+        All.DataCutRatio > 0 &&
+        All.DataCutRatio < 1) {
+        data_cuting( All.DataCutRatio );
+    }
     normalize();
 }

@@ -32,7 +32,6 @@ int main( int argc, char **argv ) {
     put_sep;
 
     global_init();
-
     read_file_names();
 
     sigs = FileNum / 100;
@@ -57,8 +56,9 @@ int main( int argc, char **argv ) {
             //fflush( stdout );
 
             read_fits( buf );
-
             pre_proc();
+            //print_data( DataRaw, 230, 290, 580, 640, 0 );
+            //return 0;
 
             lset();
 
@@ -73,3 +73,4 @@ int main( int argc, char **argv ) {
     return 0;
 
 }
+

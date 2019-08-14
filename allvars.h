@@ -18,19 +18,29 @@
 #define MYFILENAME_MAX 100
 #define SEP_LEN  50
 
-extern char sep_str[SEP_LEN];
-extern double *Data, *Phi;
-extern int Width, Height, ThisTask, NTask, FileNum;
-extern long Npixs;
-extern char FileName[ MYFILENAME_MAX ], *AllFileNames;
-
-extern struct global_parameters_struct {
+typedef struct GlobalParams {
     char InputDir[ MYFILENAME_MAX ],
          OutputDir[ MYFILENAME_MAX ],
          PhiDir[ MYFILENAME_MAX ],
          FileNameList[ MYFILENAME_MAX ];
 
-    int  LogNorm, MaxIters, IsSavePhi, SigmaClipping, FTClipping;
-    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma; 
+    int  LogNorm, MaxIters, IsSavePhi, SigmaClipping, FTClipping,
+         DataCutting;
+    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma, DataCutRatio; 
 
-}All;
+}GlobalParams;
+
+//extern_start
+extern char sep_str[SEP_LEN];
+extern double *Data, *Phi, *DataRaw;
+extern int 
+            Width, Height, ThisTask, NTask, FileNum,
+            *edgex, *edgey, NfofEdge, NfofRegion;
+extern long 
+            Npixs, edgen,
+            *Next, *Head, *Len, *Tail;
+
+extern char FileName[ MYFILENAME_MAX ], *AllFileNames;
+extern GlobalParams All;
+//extern_end
+

@@ -9,8 +9,6 @@
 
 #include "allvars.h"
 
-int *edgex, *edgey;
-long edgen;
 FILE *fd_lines;
 
 void get_c1_c2( double *c1, double *c2 ) {
@@ -150,6 +148,7 @@ void lset_init() {
      //printf( "%s\n", buf );
      fd_lines = fopen( buf, "w" );
      init_phi();
+     find_region_init();
 
 }
 
@@ -159,6 +158,7 @@ void lset_free() {
     free( edgey );
     free( Phi );
     fclose( fd_lines );
+    find_region_free();
 }
 
 #define DIVIDE_EPS 1e-16
@@ -233,20 +233,22 @@ void lset() {
         PhiDiffNorm = sqrt(PhiDiffNorm/NumEl);
         get_c1_c2( &c1, &c2 );
 
-/*
-        printf( "[iter: %i]  Delta: %e,  c1: %e, c2: %e\n",
+        put_sep;
+        printf( "[%i]  Delta: %e,  c1: %e, c2: %e\n",
                 Iter, PhiDiffNorm, c1, c2 );
-*/
-
-        if(Iter >= 2 && PhiDiffNorm <= PhiTol)
-            break;
 
         save_line( Iter );
 
         if ( All.IsSavePhi )
             save_phi(Iter);
 
+        if(Iter >= 2 && PhiDiffNorm <= PhiTol)
+            break;
+
     }
+
+        find_region( Iter );
+
 
     lset_free();    
 

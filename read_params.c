@@ -4,24 +4,7 @@
 */
 
 #include "allvars.h"
-
-#define ADD_PARAR( a ) {\
-    strcpy( tag[nt], &((#a)[4]) );\
-    addr[nt] = &a;\
-    id[nt++] = REAL;\
-}
-
-#define ADD_PARAI( a ) {\
-    strcpy( tag[nt], &((#a)[4]) );\
-    addr[nt] = &a;\
-    id[nt++] = INT;\
-}
-
-#define ADD_PARAS( a ) {\
-    strcpy( tag[nt], &((#a)[4]) );\
-    addr[nt] = a;\
-    id[nt++] = STRING;\
-}
+#include "add_params.h"
 
 #define MAXTAGS 300
 #define REAL 1
@@ -44,25 +27,8 @@ void read_parameters( char *fn ) {
         }
     
         nt = 0;
-    
-        ADD_PARAS( All.InputDir );
-        ADD_PARAS( All.OutputDir );
-        ADD_PARAS( All.FileNameList );
-        ADD_PARAS( All.PhiDir );
-    
-        ADD_PARAR( All.Mu );
-        ADD_PARAR( All.Nu );
-        ADD_PARAR( All.Lambda1 );
-        ADD_PARAR( All.Lambda2 );
-        ADD_PARAR( All.TimeStep );
-        ADD_PARAR( All.Tol );
-        ADD_PARAR( All.RSigma );
-    
-        ADD_PARAI( All.MaxIters );
-        ADD_PARAI( All.IsSavePhi );
-        ADD_PARAI( All.LogNorm );
-        ADD_PARAI( All.SigmaClipping );
-        ADD_PARAI( All.FTClipping );
+
+        ADD_PARAMS();
     
         while( !feof( fd ) ) {
             *buf = 0;
@@ -108,7 +74,7 @@ void read_parameters( char *fn ) {
             exit(20190723);
         fclose( fd );
      }
-     MPI_Bcast( &All, sizeof( struct global_parameters_struct  ), MPI_BYTE, 0, MPI_COMM_WORLD );
+     MPI_Bcast( &All, sizeof( GlobalParams ), MPI_BYTE, 0, MPI_COMM_WORLD );
 
      put_sep;
     

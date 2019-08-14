@@ -16,3 +16,6 @@ PhiDir      ./Phi
 RSigma      0.5 
 SigmaClipping       1
 FTClipping 1
+
+DataCutting         1
+DataCutRatio         0.2
