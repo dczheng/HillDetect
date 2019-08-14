@@ -366,7 +366,7 @@ void fof_ds9_region_save( int iter ) {
 
     sprintf( buf, "%s/%s_ds9_region_%04i.reg", All.OutputDir, FileName, iter );
     fd = fopen( buf, "w" );
-    fprintf( fd, h_ds9 );
+    fprintf( fd, "%s", h_ds9 );
 
     for( i=0; i<NfofEdge; i++ ) {
         fprintf( fd, "polygon(" );
