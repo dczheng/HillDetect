@@ -18,7 +18,7 @@ DEBUG     ?=
 CC         =  mpicc 
 
 EXEC       =  ./bin/fgext
-SRCS       = allvars.c fof.c io.c lset.c main.c pre_proc.c read_params.c debug.c
+SRCS       = allvars.c fof.c io.c lset.c main.c pre_proc.c read_params.c debug.c                fof_find_region.c
 MY_INCL    =  allvars.h  protos.h add_params.h
 OBJS       =  $(SRCS:.c=.o)
 
