@@ -1,6 +1,6 @@
 Mu          1
 Nu          0
-Tol         1e-5
+Tol         1e-4
 MaxIters    10000
 Lambda1     1
 Lambda2     1
@@ -14,8 +14,8 @@ InputDir    ./test_fits
 IsSavePhi   0
 PhiDir      ./Phi
 RSigma      0.5 
-SigmaClipping       1
+SigmaClipping       0
 FTClipping 1
 
-DataCutting         1
+DataCutting         0
 DataCutRatio         0.3

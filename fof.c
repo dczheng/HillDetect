@@ -192,6 +192,17 @@ void fof_region() {
 
     }
 
+    if ( np > Npixs / 2 ) {
+        np = 0;
+        for( p=0; p<Npixs; p++ ) {
+            fof_map[p] = 0;
+            if ( Phi[p] < 0 ) {
+            fof_map[p] = 1;
+            np ++;
+            }
+        }
+    }
+
 /*
     int i, j;
     FILE *fd;
