@@ -5,6 +5,7 @@
 
 #include "allvars.h"
 
+// a implementation of 2D fof.
 // need global variable: long *Next, *Head, *Tail, *Len;
 
 //#define FOF_SINGLE_DEBUG
