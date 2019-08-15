@@ -11,3 +11,6 @@ bin/
 *txt
 *fits*
 *reg
+add_params.h
+allvars.c
+protos.h

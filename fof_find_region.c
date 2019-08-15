@@ -5,11 +5,11 @@
 
 #include "allvars.h"
 
+int *fof_map;
+
 void fof_edge() {
 
     long i;
-    int *fof_map;
-    fof_map = malloc( sizeof(int) * Npixs );
 
     for( i=0; i<Npixs; i++ ) {
         fof_map[i] = 0;
@@ -19,8 +19,7 @@ void fof_edge() {
         fof_map[ edgey[i] * Width + edgex[i] ] = 1;
     }
 
-    fof( fof_map, Width, Height );
-    free( fof_map );
+    fof();
 
     for( i=0; i<Npixs; i++ )
         if ( Len[i] == 1 )
@@ -32,9 +31,8 @@ void fof_edge() {
 void fof_region() {
 
     long p;
-    int np, *fof_map;
+    int np;
 
-    fof_map = malloc( sizeof(int) * Npixs );
     np = 0;
     for( p=0; p<Npixs; p++ ) {
         fof_map[p] = 0;
@@ -79,8 +77,7 @@ void fof_region() {
 
     printf( "NPixs: %li, np; %i, nm: %li\n", Npixs, np, Npixs - np );
 
-    fof( fof_map, Width, Height );
-    free( fof_map );
+    fof();
 
     for( p=0; p<Npixs; p++ )
         if ( Len[p] == 1 )
@@ -89,11 +86,13 @@ void fof_region() {
 }
 
 void find_region_init() {
-    fof_init( Npixs );
+    fof_map = malloc( sizeof(int) * Npixs );
+    fof_init( fof_map, Width, Height );
 }
 
 void find_region_free() {
     fof_free();
+    free(fof_map);
 }
 
 void fof_edge_save( int iter ) {
@@ -246,12 +245,12 @@ void find_region( int iter ) {
 
     if ( ThisTask == 0 )
         printf( "find region ...\n" );
-    fof_reset( Npixs );
+    fof_reset();
     fof_edge();
     fof_edge_save( iter );
     fof_ds9_region_save( iter );
 
-    fof_reset( Npixs );
+    fof_reset();
     fof_region();
     fof_region_save( iter );
     fof_catalog_save( iter );

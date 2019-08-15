@@ -14,6 +14,7 @@
 #include "fitsio.h"
 #include "macros.h"
 #include "protos.h"
+#include "fof.h"
 
 #define MYFILENAME_MAX 100
 #define SEP_LEN  50
@@ -35,12 +36,14 @@ extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw;
 extern int 
             Width, Height, ThisTask, NTask, FileNum,
-            *edgex, *edgey, NfofEdge, NfofRegion;
+            NfofEdge, NfofRegion,
+            *edgex, *edgey;
 extern long 
-            Npixs, edgen,
-            *Next, *Head, *Len, *Tail;
+            Npixs, edgen;
 
 extern char FileName[ MYFILENAME_MAX ], *AllFileNames;
 extern GlobalParams All;
 //extern_end
+
+extern long *Next, *Head, *Len, *Tail;
 

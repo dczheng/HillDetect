@@ -234,7 +234,7 @@ void lset() {
         get_c1_c2( &c1, &c2 );
 
         put_sep;
-        printf( "[%i]  Delta: %e,  c1: %e, c2: %e\n",
+        printf( "[%i]  Delta: %e\nc1: %e, c2: %e\n",
                 Iter, PhiDiffNorm, c1, c2 );
 
         save_line( Iter );

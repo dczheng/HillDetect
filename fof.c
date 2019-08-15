@@ -3,23 +3,23 @@
     created 2019-08-14
 */
 
-#include "allvars.h"
+#include "fof.h"
 
 // a implementation of 2D fof.
-// need global variable: long *Next, *Head, *Tail, *Len;
 
+long *Next, *Head, *Tail, *Len, Width, Height, FoFN;
+int *FoFMap;
 //#define FOF_SINGLE_DEBUG
-void fof_single_finder( int *map, int W, int H, long p0 ) {
+void fof_single_finder( long p0 ) {
 
     int  i, j, x0, y0;
-    long p1, l, s, ss, p_next, N;
+    long p1, l, s, ss, p_next;
 
-    if ( map[p0] == 0 )
+    if ( FoFMap[p0] == 0 )
         return;
 
-    N = W * H;
-    x0 = p0 % W;
-    y0 = p0 / W;
+    x0 = p0 % Width;
+    y0 = p0 / Width;
     p_next = -1;
 
 #ifdef FOF_SINGLE_DEBUG
@@ -28,16 +28,16 @@ void fof_single_finder( int *map, int W, int H, long p0 ) {
 #endif
     for( i=-1; i<2; i++ )
         for( j=-1; j<2; j++ ) {
-            p1 = (y0+i) * W + (x0+j);
+            p1 = (y0+i) * Width + (x0+j);
 #ifdef FOF_SINGLE_DEBUG
             printf( "p0: %li, p1:  %li, NPixs: %li (%i*%i)\n",
-            p0, p1, N, W, H );
+            p0, p1, FoFN, Width, Height );
             fflush( stdout );
 #endif
             if ( p1 == p0     ||
                  p1 < 0       ||
-                 p1 > N-1 ||
-                 map[p1]  == 0 )
+                 p1 > FoFN-1 ||
+                 FoFMap[p1]  == 0 )
                 continue;
 
 #ifdef FOF_SINGLE_DEBUG
@@ -89,18 +89,25 @@ void fof_single_finder( int *map, int W, int H, long p0 ) {
 #endif
 
     if ( p_next >= 0 )
-        fof_single_finder( map, W, H, p_next );
+        fof_single_finder( p_next );
 
 }
 
-void fof_init( long N ) {
+void fof_init( int *map, int W, int H ) {
 
     long i;
-    Next = malloc( sizeof(long) * N );
-    Head = malloc( sizeof(long) * N );
-    Len = malloc( sizeof(long) * N );
-    Tail = malloc( sizeof(long) * N );
-    for( i=0; i<N; i++ ) {
+
+    Width = W;
+    Height = H;
+    FoFN = W * H;
+    FoFMap = map;
+
+    Next = malloc( sizeof(long) * FoFN );
+    Head = malloc( sizeof(long) * FoFN );
+    Len = malloc( sizeof(long) * FoFN );
+    Tail = malloc( sizeof(long) * FoFN );
+
+    for( i=0; i<FoFN; i++ ) {
         Next[i] = -1;
         Head[i] = i;
         Tail[i] = i;
@@ -108,10 +115,10 @@ void fof_init( long N ) {
     }
 }
 
-void fof_reset( long N ) {
+void fof_reset() {
 
     long i;
-    for( i=0; i<N; i++ ) {
+    for( i=0; i<FoFN; i++ ) {
         Next[i] = -1;
         Head[i] = i;
         Tail[i] = i;
@@ -132,19 +139,19 @@ int fof_compare_len( const void *a, const void *b ) {
     return ( (*(long*)a) < *((long*)b) ) ? 1 : -1;
 }
 
-void fof_sort ( long N ) {
+void fof_sort () {
 
     long *tmp, p;
-    tmp = malloc( sizeof(long) * N * 3 );
-    for ( p=0; p<N; p++ ) {
+    tmp = malloc( sizeof(long) * FoFN * 3 );
+    for ( p=0; p<FoFN; p++ ) {
         tmp[ 3*p ] = Len[p];
         tmp[ 3*p+1 ] = Head[p];
         tmp[ 3*p+2 ] = Tail[p];
     }
     
-    qsort( tmp, N, sizeof(long)*3, fof_compare_len );
+    qsort( tmp, FoFN, sizeof(long)*3, fof_compare_len );
 
-    for ( p=0; p<N; p++ ) {
+    for ( p=0; p<FoFN; p++ ) {
         Len[p] = tmp[ 3*p ];
         Head[p] = tmp[ 3*p+1 ];
         Tail[p] = tmp[ 3*p+2 ];
@@ -152,10 +159,10 @@ void fof_sort ( long N ) {
     free( tmp );
 }
 
-void fof( int *map, int W, int H ) {
+void fof() {
     long p;
-    for( p=0; p<W*H; p++ ) {
-        fof_single_finder( map, W, H , p );
+    for( p=0; p<FoFN; p++ ) {
+        fof_single_finder(  p );
     }
-    fof_sort( W*H );
+    fof_sort();
 }
