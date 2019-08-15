@@ -174,6 +174,6 @@ def make_protos():
     ff.close()
 
 
+make_protos()
 gen_add_params()
 gen_allvars()
-make_protos()
