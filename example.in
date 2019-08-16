@@ -17,5 +17,5 @@ RSigma      0.5
 SigmaClipping       0
 FTClipping 1
 
-DataCutting         0
+DataCutting         1
 DataCutRatio         0.3
