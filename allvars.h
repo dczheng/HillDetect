@@ -23,11 +23,14 @@ typedef struct GlobalParams {
     char InputDir[ MYFILENAME_MAX ],
          OutputDir[ MYFILENAME_MAX ],
          PhiDir[ MYFILENAME_MAX ],
+         FileName[ MYFILENAME_MAX ],
          FileNameList[ MYFILENAME_MAX ];
 
     int  LogNorm, MaxIters, IsSavePhi, SigmaClipping, FTClipping,
-         DataCutting;
-    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma, DataCutRatio; 
+         DataCutting, ParalleLevel;
+    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma, 
+            CuttingXStart, CuttingXEnd,
+            CuttingYStart, CuttingYEnd ; 
 
 }GlobalParams;
 

@@ -72,7 +72,7 @@ void read_file_names() {
     if ( ThisTask == 0 ) {
         fd = fopen( All.FileNameList, "r" );
         if ( NULL == fd )
-            endrun( 20190727 );
+            endrun("");
         do {
             fgets( buf, MYFILENAME_MAX, fd );
             FileNum ++;

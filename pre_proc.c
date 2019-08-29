@@ -40,20 +40,33 @@ void sigma_clipping() {
 
 }
 
-void data_cuting( double r ) {
-    /* only for test */
-    int i, j, h, w;
-    h = Height * r;
-    w = Width * r;
+void data_cuting() {
+
+    int i, j, h0, h1, w0, w1;
+    long index;
+    h0 = Height * All.CuttingYStart;
+    h1 = Height * All.CuttingYEnd;
+    w0 = Height * All.CuttingXStart;
+    w1 = Height * All.CuttingXEnd;
     //printf( "%i %i %i %i\n", Height, Width, h, w  );
-    for( i=0; i<h; i++ )
-        for ( j=0; j<w; j++ ) {
-            Data[i*w+j] = Data[i*Width+j];
-            DataRaw[i*w+j] = DataRaw[i*Width+j];
-        }
-   Height = h;
-   Width = w;
-   Npixs = h * w;
+
+    if ( h1<=h0 || w1<=w0 ) {
+        endrun( "Invalid cutting parameters." );
+    }
+
+    //output_data( "before_cutting.dat" );
+
+    for( i=h0, index=0; i<h1; i++ )
+        for ( j=w0; j<w1; j++, index++ ) {
+            Data[index] = Data[i*Width+j];
+            DataRaw[index] = DataRaw[i*Width+j];
+       }
+    Height = h1 - h0;
+    Width = w1 - w0;
+    Npixs = Height * Width;
+
+    //output_data( "after_cutting.dat" );
+    //endrun( "test" );
 }
 
 void normalize() {
@@ -175,8 +188,6 @@ void ft_clipping(){
     }
     fclose( fd );
 
-    //endrun(0);
-    
 }
 
 void pre_proc() {
@@ -187,10 +198,8 @@ void pre_proc() {
     if ( All.SigmaClipping )
         sigma_clipping();
 
-    if ( All.DataCutting &&
-        All.DataCutRatio > 0 &&
-        All.DataCutRatio < 1) {
-        data_cuting( All.DataCutRatio );
-    }
+    if ( All.DataCutting )
+        data_cuting();
+
     normalize();
 }

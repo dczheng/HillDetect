@@ -21,7 +21,22 @@ void print_data( double *d, int x0, int x1, int y0, int y1, int flag ) {
     }
     printf( "tmin: %g, tmax: %g\n", tmin, tmax );
     if ( flag )
-        endrun( 1212121 );
+        endrun("");
     put_sep;
+
+}
+
+void output_data( char *fn ) {
+
+    int i, j;
+    FILE *fd;
+
+    fd = fopen( fn, "w" );
+    for( i=0; i<Height; i++ ) {
+        for ( j=0; j<Width; j++ )
+            fprintf( fd, "%g ", Data[i*Height+j] );
+        fprintf( fd, "\n" );
+    }
+    fclose( fd );
 
 }

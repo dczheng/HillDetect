@@ -13,7 +13,8 @@
 }
 
 #define endrun( a ) {\
-    fprintf( stderr, "%i\n", a );\
+    fprintf( stderr, "End Info: %s\n", a );\
+    printf( "STOP AT: %s, %s, %i\n", __FILE__, __FUNCTION__, __LINE__ );\
     MPI_Abort( MPI_COMM_WORLD, 0 );\
     exit(0);\
 }

@@ -5,37 +5,14 @@
 
 #include "allvars.h"
 
-void init_sep_str() {
-    memset( sep_str, '-', SEP_LEN-2 );
-    sep_str[ SEP_LEN-2 ] = '\n';
-    sep_str[ SEP_LEN-1 ] = '\0';
-}
-
-void global_free() {
-    free( AllFileNames );
-}
-
-void global_init() {
-}
-
-int main( int argc, char **argv ) {
+void run0() {
 
     int i, N, j, sigs;
     char buf[MYFILENAME_MAX];
-    MPI_Init( &argc, &argv );
-    MPI_Comm_rank( MPI_COMM_WORLD, &ThisTask );
-    MPI_Comm_size( MPI_COMM_WORLD, &NTask );
 
-    init_sep_str();
-
-    read_parameters( argv[1] );
-    put_sep;
-
-    global_init();
     read_file_names();
 
     sigs = FileNum / 100;
-
     for( i=0; i<FileNum; i++ ) {
 
         if ( sigs != 0 && i % sigs == 0 && ThisTask == 0 )
@@ -67,6 +44,42 @@ int main( int argc, char **argv ) {
 
         //MPI_Barrier( MPI_COMM_WORLD );
     }
+    free( AllFileNames );
+}
+
+void run1() {
+
+    read_fits( All.FileName );
+    pre_proc();
+    free_fits();
+
+}
+
+int main( int argc, char **argv ) {
+
+    MPI_Init( &argc, &argv );
+    MPI_Comm_rank( MPI_COMM_WORLD, &ThisTask );
+    MPI_Comm_size( MPI_COMM_WORLD, &NTask );
+
+    memset( sep_str, '-', SEP_LEN-2 );
+    sep_str[ SEP_LEN-2 ] = '\n';
+    sep_str[ SEP_LEN-1 ] = '\0';
+
+    read_parameters( argv[1] );
+    put_sep;
+
+    switch (All.ParalleLevel) {
+        case 0:
+            run0();
+            break;
+        case 1:
+            run1();
+            break;
+        default:
+            printf( "Unsupported paralle level.\n" );
+            endrun( "" );
+    } 
+
 
     MPI_Barrier( MPI_COMM_WORLD );
     MPI_Finalize();

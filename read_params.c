@@ -6,7 +6,6 @@
 #include "allvars.h"
 #include "add_params.h"
 
-#define MAXTAGS 300
 #define REAL 1
 #define STRING 2
 #define INT 3
