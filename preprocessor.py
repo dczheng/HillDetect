@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import re
+import sys
     
 debug = 0
 def myprint( s ):
@@ -180,7 +181,21 @@ def make_protos():
         ff.write( '\n\n' )
     ff.close()
 
+def main():
+    if len(sys.argv) == 1:
+        gen_allvars()
+        make_protos()
+        gen_add_params()
+        return
+    flag = int( sys.argv[1] )
 
-make_protos()
-gen_add_params()
-gen_allvars()
+    if flag == 1:
+        gen_allvars()
+
+    if flag == 2:
+        gen_add_params()
+
+    if flag == 3:
+        make_protos()
+
+main()

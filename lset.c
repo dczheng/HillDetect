@@ -9,11 +9,9 @@
 
 #include "allvars.h"
 
-FILE *fd_lines;
-
 void get_c1_c2( double *c1, double *c2 ) {
 
-    long i;
+    int i;
     double s1, s2, n1, n2;
     n1 = n2 = 0;
     s1 = s2 = 0;
@@ -35,7 +33,7 @@ void get_c1_c2( double *c1, double *c2 ) {
 
 void get_s1_s2( double *s1, double *s2 ) {
 
-    long i;
+    int i;
     *s1 = *s2 = 0;
     for( i=0; i<Npixs; i++ ) {
         if ( Phi[i] > 0 ) {
@@ -53,7 +51,7 @@ void save_phi( int iter ) {
     char buf[110];
     FILE *fd;
     int i, j;
-    long index;
+    int index;
 
     sprintf( buf, "%s/%s_phi_%i", All.PhiDir, FileName, iter );
     fd = fopen( buf, "w" );
@@ -68,13 +66,9 @@ void save_phi( int iter ) {
     fclose( fd );
 }
 
-void save_line( int iter ) {
-
+void lset_find_line() {
     int i,j;
-    long index;
-    double s1, s2;
-    get_s1_s2( &s1, &s2 );
-
+    int index;
     for( i=0, index=0, edgen=0; i<Height; i++ ) {
         for( j=0; j<Width; j++, index++) {
             if ( Phi[index] > 0 &&
@@ -93,14 +87,21 @@ void save_line( int iter ) {
         }
     }
 
-    //printf( "edgen: %li\n", edgen );
+}
+
+void save_line( int iter ) {
+
+    //printf( "edgen: %i\n", edgen );
+    int index;
+    double s1, s2;
+    get_s1_s2( &s1, &s2 );
 
 #define myprintf( xy ) { \
-    fprintf( fd_lines, "%i %li %g %g ", iter, edgen, s1, s2 ); \
+    fprintf( LsetLinesFd, "%i %i %g %g ", iter, edgen, s1, s2 ); \
     for( index=0; index<edgen; index++ ) { \
-        fprintf( fd_lines, "%i ", xy[index] ); \
+        fprintf( LsetLinesFd, "%i ", xy[index] ); \
     } \
-    fprintf( fd_lines, "\n" ); \
+    fprintf( LsetLinesFd, "\n" ); \
 }
 
     myprintf( edgex );
@@ -113,7 +114,7 @@ void save_line( int iter ) {
 void init_phi() {
 
     int i, j;
-    long index;
+    int index;
 
     Phi = malloc( Width * Height * sizeof(double) );
 
@@ -137,39 +138,15 @@ void init_phi() {
 
 }
 
-void lset_init() {
-
-     char buf[MYFILENAME_MAX];
-
-     edgex = malloc( sizeof(int) * Npixs );
-     edgey = malloc( sizeof(int) * Npixs );
-
-     sprintf( buf, "%s/%s.out", All.OutputDir, FileName );
-     //printf( "%s\n", buf );
-     fd_lines = fopen( buf, "w" );
-     init_phi();
-     find_region_init();
-
-}
-
-void lset_free() {
-
-    free( edgex );
-    free( edgey );
-    free( Phi );
-    fclose( fd_lines );
-    find_region_free();
-}
-
 #define DIVIDE_EPS 1e-16
-void lset() {
+void lset( int mode ) {
 
     /*
       This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
     */
 
-    const long NumPixels = Width * Height;
-    const long NumEl = NumPixels;
+    const int NumPixels = Width * Height;
+    const int NumEl = NumPixels;
     const double *fPtr;
     double PhiDiffNorm, PhiDiff;
     double *PhiPtr;
@@ -178,11 +155,17 @@ void lset() {
     int Iter, i, j;
     int iu, id, il, ir;
 
+    mytimer_start();
     PhiTol = All.Tol;
     PhiDiffNorm = (All.Tol > 0) ? All.Tol*1000 : 1000;
     dt = All.TimeStep;
 
-    lset_init();
+    edgex = malloc( sizeof(int) * Npixs );
+    edgey = malloc( sizeof(int) * Npixs );
+
+    init_phi();
+    find_region_init();
+
     get_c1_c2( &c1, &c2 );
 
     for(Iter = 1; Iter <= All.MaxIters; Iter++)
@@ -233,24 +216,33 @@ void lset() {
         PhiDiffNorm = sqrt(PhiDiffNorm/NumEl);
         get_c1_c2( &c1, &c2 );
 
-        put_sep;
-        printf( "[%i]  Delta: %e\nc1: %e, c2: %e\n",
-                Iter, PhiDiffNorm, c1, c2 );
+        fprintf( LogFileFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+                            Iter, PhiDiffNorm, c1, c2 );
 
-        save_line( Iter );
-        find_region( Iter );
+        lset_find_line();
 
-        if ( All.IsSavePhi )
-            save_phi(Iter);
+        if ( mode == 1 ) {
+            save_line( Iter );
+            if ( All.IsSavePhi )
+                save_phi(Iter);
+            find_region( Iter, mode );
+        }
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
             break;
 
     }
 
+    if ( mode == 0 )
+       find_region( Iter, mode );
 
+    free( edgex );
+    free( edgey );
+    free( Phi );
 
-    lset_free();    
+    if ( mode == 1 )
+        find_region_free();
+    mytimer_end();
 
 }
 

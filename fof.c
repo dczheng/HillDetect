@@ -7,13 +7,13 @@
 
 // a implementation of 2D fof.
 
-long *Next, *Head, *Tail, *Len, Width, Height, FoFN;
+int *Next, *Head, *Tail, *Len, Width, Height, FoFN;
 int *FoFMap;
 //#define FOF_SINGLE_DEBUG
-void fof_single_finder( long p0 ) {
+void fof_single_finder( int p0 ) {
 
     int  i, j, x0, y0;
-    long p1, l, s, ss, p_next;
+    int p1, l, s, ss, p_next;
 
     if ( FoFMap[p0] == 0 )
         return;
@@ -95,17 +95,17 @@ void fof_single_finder( long p0 ) {
 
 void fof_init( int *map, int W, int H ) {
 
-    long i;
+    int i;
 
     Width = W;
     Height = H;
     FoFN = W * H;
     FoFMap = map;
 
-    Next = malloc( sizeof(long) * FoFN );
-    Head = malloc( sizeof(long) * FoFN );
-    Len = malloc( sizeof(long) * FoFN );
-    Tail = malloc( sizeof(long) * FoFN );
+    Next = malloc( sizeof(int) * FoFN );
+    Head = malloc( sizeof(int) * FoFN );
+    Len = malloc( sizeof(int) * FoFN );
+    Tail = malloc( sizeof(int) * FoFN );
 
     for( i=0; i<FoFN; i++ ) {
         Next[i] = -1;
@@ -117,7 +117,7 @@ void fof_init( int *map, int W, int H ) {
 
 void fof_reset() {
 
-    long i;
+    int i;
     for( i=0; i<FoFN; i++ ) {
         Next[i] = -1;
         Head[i] = i;
@@ -136,20 +136,20 @@ void fof_free() {
 }
 
 int fof_compare_len( const void *a, const void *b ) {
-    return ( (*(long*)a) < *((long*)b) ) ? 1 : -1;
+    return ( (*(int*)a) < *((int*)b) ) ? 1 : -1;
 }
 
 void fof_sort () {
 
-    long *tmp, p;
-    tmp = malloc( sizeof(long) * FoFN * 3 );
+    int *tmp, p;
+    tmp = malloc( sizeof(int) * FoFN * 3 );
     for ( p=0; p<FoFN; p++ ) {
         tmp[ 3*p ] = Len[p];
         tmp[ 3*p+1 ] = Head[p];
         tmp[ 3*p+2 ] = Tail[p];
     }
     
-    qsort( tmp, FoFN, sizeof(long)*3, fof_compare_len );
+    qsort( tmp, FoFN, sizeof(int)*3, fof_compare_len );
 
     for ( p=0; p<FoFN; p++ ) {
         Len[p] = tmp[ 3*p ];
@@ -160,7 +160,7 @@ void fof_sort () {
 }
 
 void fof() {
-    long p;
+    int p;
     for( p=0; p<FoFN; p++ ) {
         fof_single_finder(  p );
     }

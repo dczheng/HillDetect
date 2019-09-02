@@ -8,7 +8,7 @@
 
 void sigma_clipping() {
 
-    long i;
+    int i;
     double sigma, mu, vmin;
 
     vmin = 1e100;
@@ -43,7 +43,7 @@ void sigma_clipping() {
 void data_cuting() {
 
     int i, j, h0, h1, w0, w1;
-    long index;
+    int index;
     h0 = Height * All.CuttingYStart;
     h1 = Height * All.CuttingYEnd;
     w0 = Height * All.CuttingXStart;
@@ -72,7 +72,7 @@ void data_cuting() {
 void normalize() {
 
     double vmin, vmax, dv;
-    long i;
+    int i;
 
     vmax = -1e100;
     vmin = 1e100;

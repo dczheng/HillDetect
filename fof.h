@@ -1,6 +1,6 @@
 #include "stdio.h"
 #include "stdlib.h"
-extern long *Next, *Head, *Tail, *Len;
+extern int *Next, *Head, *Tail, *Len;
 
 void fof_init( int *map, int W, int H );
 void fof_free();

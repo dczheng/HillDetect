@@ -1,14 +1,10 @@
-GSL_INCL   = 
-GSL_LIBS   = -lm 
-
 FITS_INCL  =
-FITS_OPTS  = 
 FITS_LIBS  = -lcfitsio
 
 FFTW_INCL  = 
 FFTW_LIBS  = -ldrfftw -ldfftw
 
-PYTHON ?= $(shell which python3)
+PYTHON    ?= $(shell which python3)
 
 LIBS       = $(GSL_LIBS) $(FITS_LIBS) $(FFTW_LIBS) -lm
 INCL       = $(GSL_INCL) $(FITS_INCL) $(FFTW_INCL)
@@ -18,9 +14,12 @@ DEBUG     ?=
 CC         =  mpicc 
 
 EXEC       =  ./bin/fgext
-SRCS       = allvars.c fof.c io.c lset.c main.c pre_proc.c read_params.c debug.c                fof_find_region.c
-MY_INCL    =  allvars.h  protos.h add_params.h macros.h
+SRCS       =  $(wildcard *.c) 
+MY_INCL    =  $(wildcard *.h)
 OBJS       =  $(SRCS:.c=.o)
+
+OBJS      +=  allvars.o
+MY_INCL   += add_params.h protos.h
 
 $(EXEC): $(OBJS)
 	$(CC) $(OPTS) $(OBJS) $(LIBS) -o $(EXEC)
@@ -28,15 +27,23 @@ $(EXEC): $(OBJS)
 %.o:%.c $(MY_INCL) Makefile
 	$(CC) $(OPTS) $(DEBUG) $(INCL) -c $< -o $@
 
-allvars.c: allvars.h preprocessor.py
-	$(shell ${PYTHON} ./preprocessor.py)
+allvars.o: allvars.h  preprocessor.py Makefile
+	@echo "generate allvars.c ..."
+	$(shell ${PYTHON} ./preprocessor.py 1)
+	$(CC) $(OPTS) $(DEBUG) $(INCL) -c allvars.c -o allvars.o
 
-add_params.h: allvars.h preprocessor.py
+add_params.h: allvars.h  preprocessor.py Makefile
+	@echo "generate add_params.h ..."
+	$(shell ${PYTHON} ./preprocessor.py 2)
 
-protos.h: $(SRCS) preprocessor.py
-
+protos.h: $(SRCS) preprocessor.py Makefile
+	@echo "generate protos.h ..."
+	$(shell ${PYTHON} ./preprocessor.py 3)
 
 .PHONY: clean
 
 clean:
-	-rm  $(EXEC)  $(OBJS) allvars.c add_params.h protos.h
+	-rm  $(EXEC) *.o allvars.c add_params.h protos.h
+
+test_make:
+	@echo $(TEMP)

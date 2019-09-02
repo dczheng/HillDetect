@@ -3,7 +3,7 @@ void print_data( double *d, int x0, int x1, int y0, int y1, int flag ) {
     put_sep;
     printf( "x0: %i, x1: %i, y0: %i, y1: %i\n", x0, x1, y0, y1 );
     int ti, tj;
-    long tindex;
+    int tindex;
     double tmin, tmax;
     tmin = 1e20;
     tmax = -tmin;

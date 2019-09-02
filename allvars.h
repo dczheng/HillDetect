@@ -3,18 +3,22 @@
     created 2019-07-28
 */
 
+#include "hdf5.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
+#include "unistd.h"
 #include "math.h"
 #include "time.h"
+#include "dirent.h"
 #include "mpi.h"
 #include "signal.h"
 #include "limits.h"
-#include "fitsio.h"
+#include "sys/stat.h"
 #include "macros.h"
+#include "libgen.h"
 #include "protos.h"
-#include "fof.h"
+#include "fitsio.h"
 
 #define MYFILENAME_MAX 100
 #define SEP_LEN  50
@@ -40,13 +44,13 @@ extern double *Data, *Phi, *DataRaw;
 extern int 
             Width, Height, ThisTask, NTask, FileNum,
             NfofEdge, NfofRegion,
-            *edgex, *edgey;
-extern long 
-            Npixs, edgen;
+            *edgex, *edgey,
+            Npixs, edgen, XShift, YShift;
 
 extern char FileName[ MYFILENAME_MAX ], *AllFileNames;
 extern GlobalParams All;
+extern FILE *LogFileFd, *LsetLinesFd;
 //extern_end
 
-extern long *Next, *Head, *Len, *Tail;
+extern int *Next, *Head, *Len, *Tail;
 

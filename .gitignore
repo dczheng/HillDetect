@@ -14,3 +14,4 @@ bin/
 add_params.h
 allvars.c
 protos.h
+*log
