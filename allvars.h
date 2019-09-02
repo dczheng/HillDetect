@@ -30,9 +30,13 @@ typedef struct GlobalParams {
          FileName[ MYFILENAME_MAX ],
          FileNameList[ MYFILENAME_MAX ];
 
-    int  LogNorm, MaxIters, IsSavePhi, SigmaClipping, FTClipping,
+    int  LogNorm, LogNorm1, MaxIters, IsSavePhi,
+         SigmaClipping,
+         SigmaClipping1,
+         FTClipping,
          DataCutting, ParalleLevel;
-    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep, RSigma, 
+    double  Mu, Nu, Tol, Tol1, Lambda1, Lambda2, TimeStep, RSigma, 
+            RSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd ; 
 
@@ -47,9 +51,10 @@ extern int
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift;
 
-extern char FileName[ MYFILENAME_MAX ], *AllFileNames;
+extern char FileName[ MYFILENAME_MAX ], OutputPrefix[ MYFILENAME_MAX ],
+            *AllFileNames;
 extern GlobalParams All;
-extern FILE *LogFileFd, *LsetLinesFd;
+extern FILE *LogFileFd;
 //extern_end
 
 extern int *Next, *Head, *Len, *Tail;

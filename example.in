@@ -2,6 +2,7 @@
 Mu              1
 Nu              0
 Tol             1e-4
+Tol1            1e-4
 MaxIters        10000
 Lambda1         1
 Lambda2         1
@@ -12,7 +13,7 @@ TimeStep        0.1
 ParalleLevel   1
 InputDir        ./test_fits
 FileNameList    ./filelist.txt
-FileName        ./test_fits/t.fits
+FileName        ./test_fits/large.fits
 
 %---------------------- output options
 IsSavePhi       0
@@ -21,8 +22,11 @@ PhiDir          ./Phi
 
 %---------------------- preprocess options 
 LogNorm         1
+LogNorm1        1
+SigmaClipping   1
+SigmaClipping1  1
 RSigma          0.5 
-SigmaClipping   0
+RSigma1         0.3 
 FTClipping      0
 DataCutting     1
 CuttingXStart   0.25

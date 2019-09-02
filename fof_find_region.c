@@ -97,23 +97,30 @@ void find_region_free() {
     free(fof_map);
 }
 
-void fof_edge_save( int iter ) {
+void fof_edge_save( int iter, int mode ) {
 
     char buf[100];
     FILE *fd;
     int i, p;
     int xi, yi;
 
-    if ( ThisTask == 0 )
-        printf( "save edge ...\n" );
-    sprintf( buf, "%s/%s_edge_%04i.dat", All.OutputDir, FileName, iter );
+    if ( mode == 0 )
+        if ( ThisTask )
+            return;
+
+    writelog( "save edge ...\n" );
+    if ( mode == 0 )
+        sprintf( buf, "%s/%s_edge.dat", All.OutputDir, OutputPrefix );
+    else
+        sprintf( buf, "%s/%s_edge_%05i.dat", All.OutputDir, OutputPrefix, iter );
+
     fd = fopen( buf, "w" );
     for( i=0; i<NfofEdge; i++ ) {
         p = Head[i];
         fprintf( fd, "%4i ", Len[i] );
         while( p>=0 ) {
             xi = p % Width;
-            fprintf( fd, "%4i ",  xi );
+            fprintf( fd, "%4i ",  xi + XShift );
             p = Next[p];
         }
         fprintf( fd, "\n" );
@@ -122,7 +129,7 @@ void fof_edge_save( int iter ) {
         fprintf( fd, "%4i ", Len[i] );
         while( p>=0 ) {
             yi = p / Width;
-            fprintf( fd, "%4i ",  yi );
+            fprintf( fd, "%4i ",  yi + YShift );
             p = Next[p];
         }
         fprintf( fd, "\n" );
@@ -245,14 +252,20 @@ void fof_ds9_region_save( int iter ) {
 
 void find_region( int iter, int mode ) {
 
-    fprintf( LogFileFd, "find region ...\n" );
+    if ( mode == 0 ) {
+        writelog( "find region ...\n" );
+    }
+    else{
+        fprintf( LogFileFd, "find region ...\n" );
+    }
+
     fof_reset();
     fof_edge();
+    fof_edge_save( iter, mode );
 
     if ( mode == 0 )
         return;
 
-    fof_edge_save( iter );
     fof_ds9_region_save( iter );
 
     fof_reset();

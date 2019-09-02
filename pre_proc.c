@@ -6,10 +6,24 @@
 #include "allvars.h"
 #include "drfftw.h"
 
-void sigma_clipping() {
+void sigma_clipping( int mode ) {
 
     int i;
-    double sigma, mu, vmin;
+    double sigma, mu, vmin, r;
+
+    if ( mode==0 ) {
+        if ( All.SigmaClipping == 0 )
+            return;
+        else 
+            r = All.RSigma;
+    }
+
+    if ( mode==1) {
+        if ( All.SigmaClipping1 == 0 )
+            return;
+        else
+            r = All.RSigma1;
+    }
 
     vmin = 1e100;
     for ( i=0; i<Npixs; i++ ) {
@@ -31,7 +45,7 @@ void sigma_clipping() {
         sigma += SQR( Data[i] - mu );
     }
     sigma = sqrt( sigma / Npixs );
-    vmin = mu + All.RSigma * sigma;  
+    vmin = mu + r * sigma;  
 
     for( i=0; i<Npixs; i++ ) {
         if ( Data[i] < vmin )
@@ -40,10 +54,14 @@ void sigma_clipping() {
 
 }
 
-void data_cuting() {
+void data_cuting( int mode ) {
 
     int i, j, h0, h1, w0, w1;
     int index;
+
+    if ( mode == 1 )
+        return;
+
     h0 = Height * All.CuttingYStart;
     h1 = Height * All.CuttingYEnd;
     w0 = Height * All.CuttingXStart;
@@ -69,20 +87,25 @@ void data_cuting() {
     //endrun( "test" );
 }
 
-void normalize() {
+void normalize( int mode ) {
 
-    double vmin, vmax, dv;
+    double vmin, vmax, dv, logflag;
     int i;
 
     vmax = -1e100;
     vmin = 1e100;
+
+    if ( mode == 0 )
+        logflag = All.LogNorm;
+    if ( mode == 1 )
+        logflag = All.LogNorm1;
 
     for( i=0; i<Npixs; i++ ) {
 
         if ( isnan( Data[i] ) )
             continue;
 
-        if ( All.LogNorm ) {
+        if ( logflag ) {
             if ( Data[i] > 0 )
                 vmin = ( vmin < Data[i] ) ? vmin : Data[i];
         }
@@ -98,18 +121,18 @@ void normalize() {
         if ( isnan( Data[i] ) )
             Data[i] = vmin;
 
-        if ( All.LogNorm )
+        if ( logflag )
             if ( Data[i] < vmin )
                 Data[i] = vmin;
     }
 
-    if ( All.LogNorm )
+    if ( logflag )
         dv =log( vmax / vmin );
     else
         dv = vmax - vmin;
 
     for ( i=0; i<Npixs; i++ ) {
-        if ( All.LogNorm )
+        if ( logflag )
             Data[i] = log( Data[i]/vmin ) / dv;
         else
             Data[i] = ( Data[i] - vmin ) / dv;
@@ -117,11 +140,15 @@ void normalize() {
 
 }
 
-void ft_clipping(){
+void ft_clipping( int mode ){
 
     int i, j, N2;
     FILE *fd;
     double fac, k;
+
+    if ( mode == 0 )
+        return;
+
     fd = fopen( "t.dat", "w" );
     for( i=0; i<Height; i++ ) {
         for( j=0; j<Width; j++ )
@@ -190,16 +217,15 @@ void ft_clipping(){
 
 }
 
-void pre_proc() {
+void pre_proc( int mode ) {
     
     if ( All.FTClipping )
-        ft_clipping();
+        ft_clipping( mode );
 
-    if ( All.SigmaClipping )
-        sigma_clipping();
+    sigma_clipping( mode );
 
     if ( All.DataCutting )
-        data_cuting();
+        data_cuting( mode );
 
-    normalize();
+    normalize( mode );
 }

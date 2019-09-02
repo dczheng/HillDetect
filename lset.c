@@ -9,6 +9,8 @@
 
 #include "allvars.h"
 
+FILE *fdlf;
+
 void get_c1_c2( double *c1, double *c2 ) {
 
     int i;
@@ -53,7 +55,7 @@ void save_phi( int iter ) {
     int i, j;
     int index;
 
-    sprintf( buf, "%s/%s_phi_%i", All.PhiDir, FileName, iter );
+    sprintf( buf, "%s/%s_phi_%i", All.PhiDir, OutputPrefix, iter );
     fd = fopen( buf, "w" );
 
     for( i=0, index=0; i<Height; i++ ) {
@@ -96,16 +98,16 @@ void save_line( int iter ) {
     double s1, s2;
     get_s1_s2( &s1, &s2 );
 
-#define myprintf( xy ) { \
-    fprintf( LsetLinesFd, "%i %i %g %g ", iter, edgen, s1, s2 ); \
+#define myprintf( xy, dis ) { \
+    fprintf( fdlf, "%i %i %g %g ", iter, edgen, s1, s2 ); \
     for( index=0; index<edgen; index++ ) { \
-        fprintf( LsetLinesFd, "%i ", xy[index] ); \
+        fprintf( fdlf, "%i ", xy[index] + dis ); \
     } \
-    fprintf( LsetLinesFd, "\n" ); \
+    fprintf( fdlf, "\n" ); \
 }
 
-    myprintf( edgex );
-    myprintf( edgey );
+    myprintf( edgex, XShift );
+    myprintf( edgey, YShift );
 
 #undef myprintf
 
@@ -154,10 +156,16 @@ void lset( int mode ) {
     double Dist1, Dist2, PhiTol, dt, c1, c2;
     int Iter, i, j;
     int iu, id, il, ir;
+    FILE *fd;
 
-    mytimer_start();
-    PhiTol = All.Tol;
-    PhiDiffNorm = (All.Tol > 0) ? All.Tol*1000 : 1000;
+    if ( mode == 0 ) {
+        PhiTol = All.Tol;
+        PhiDiffNorm = (All.Tol > 0) ? All.Tol*1000 : 1000;
+    }
+    else {
+        PhiTol = All.Tol1;
+        PhiDiffNorm = (All.Tol1 > 0) ? All.Tol1*1000 : 1000;
+    }
     dt = All.TimeStep;
 
     edgex = malloc( sizeof(int) * Npixs );
@@ -165,6 +173,19 @@ void lset( int mode ) {
 
     init_phi();
     find_region_init();
+
+    fd = myfopen( "w", "%s/%s_lset_err.dat", All.OutputDir, OutputPrefix );
+
+    if ( mode == 1 ) {
+        fdlf = myfopen( "w", "%s/%s_lset_lines.dat", 
+            All.OutputDir, OutputPrefix );
+    }
+    if ( mode == 0 ) {
+        if ( ThisTask == 0 )
+            fdlf = myfopen( "w", "%s/%s_lset_lines.dat", 
+                All.OutputDir, OutputPrefix );
+    }
+    
 
     get_c1_c2( &c1, &c2 );
 
@@ -216,16 +237,23 @@ void lset( int mode ) {
         PhiDiffNorm = sqrt(PhiDiffNorm/NumEl);
         get_c1_c2( &c1, &c2 );
 
-        fprintf( LogFileFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+        fprintf( fd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
                             Iter, PhiDiffNorm, c1, c2 );
-
         lset_find_line();
 
         if ( mode == 1 ) {
             save_line( Iter );
             if ( All.IsSavePhi )
                 save_phi(Iter);
-            find_region( Iter, mode );
+            //find_region( Iter, mode );
+        }
+
+        if ( mode == 0 ) {
+            if ( ThisTask == 0 ) {
+                save_line( Iter );
+                if ( All.IsSavePhi )
+                    save_phi(Iter);
+            }
         }
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
@@ -240,9 +268,16 @@ void lset( int mode ) {
     free( edgey );
     free( Phi );
 
-    if ( mode == 1 )
-        find_region_free();
-    mytimer_end();
+    if ( mode == 1 ) {
+//        find_region_free();
+        fclose( fdlf );
+    }
+    if ( mode == 0 ) {
+        if ( ThisTask == 0 )
+            fclose( fdlf );
+    }
+
+    fclose( fd );
 
 }
 

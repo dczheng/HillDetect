@@ -108,3 +108,44 @@ void free_fits(){
     free( Data );
     free( DataRaw );
 }
+
+void output_map( char *fn, int W, int H, double *D, int *Xs, int *Ys ) {
+    FILE *fd;
+    int i, j, xmin, ymin, xmax, ymax, ww, hh;
+    (void)hh;
+
+    fd = fopen( fn, "w" );
+
+    if ( Xs == NULL ) {
+        xmin = 0;
+        xmax = W;
+    }
+    else {
+        xmin = Xs[0];
+        xmax = Xs[1];
+    }
+
+    if ( Ys == NULL ) {
+        ymin = 0;
+        ymax = H;
+    }
+    else {
+        ymin = Ys[0];
+        ymax = Ys[1];
+    }
+
+    ww = xmax - xmin;
+    hh = ymax - ymin;
+
+    fprintf( fd, "%i %i %i %i ", xmin, ymin, xmax, ymax );
+    for( i=0; i<ww-4; i++ )
+        fprintf( fd, "0 " );
+    fprintf( fd, "\n" );
+
+    for( i=ymin; i<ymax; i++ ) {
+        for( j=xmin; j<xmax; j++ ) {
+            fprintf( fd, "%g ", D[i*W+j] );
+        }
+        fprintf( fd, "\n" );
+    }
+}
