@@ -205,15 +205,14 @@ void run1() {
         sprintf( buf, "%s/%s_map.dat", All.OutputDir, OutputPrefix );
         output_map( buf, Width_global,  Height_global, DataRaw, Xs, Ys );
 
-#ifdef RUN1_DEBUG
-        sprintf( buf, "%s/%s_%03i_before.dat", All.OutputDir, OutputPrefix, ThisTask );
+        sprintf( buf, "%s/%s_before.dat", All.OutputDir, OutputPrefix );
         output_map( buf, Width,  Height, Data, NULL, NULL );
-#endif
+
         pre_proc(1);
-#ifdef RUN1_DEBUG
-        sprintf( buf, "%s/%s_%03i_after.dat", All.OutputDir, OutputPrefix, ThisTask );
+
+        sprintf( buf, "%s/%s_after.dat", All.OutputDir, OutputPrefix );
         output_map( buf, Width,  Height, Data, NULL, NULL );
-#endif
+
         lset(1);
 
     }
