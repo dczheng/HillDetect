@@ -53,8 +53,10 @@ void run1() {
 
     int *next_lset0, *head_lset0, *len_lset0, gn,
          i, p, j, k, Width_global, Height_global,
+         Xs[2], Ys[2],
          xmin, xmax, ymin, ymax, x, y, w, h, flag, index;
     double t0, t1;
+    char buf[ MYFILENAME_MAX ];
 //#define FIXEDSIZE
 #ifdef FIXEDSIZE
     int wh;
@@ -63,7 +65,7 @@ void run1() {
     int lmin;
 #endif
 
-#define RUN1_DEBUG
+//#define RUN1_DEBUG
     read_fits( All.FileName );
     bname = basename( All.FileName );
     pre_proc(0);
@@ -118,8 +120,10 @@ void run1() {
     gn = index;
     writelog( "gn: %i\n", gn );
 
-    if ( ThisTask == 0 )
-        output_map( "run1_raw_map.dat", Width, Height, DataRaw, NULL, NULL );
+    if ( ThisTask == 0 ) {
+        sprintf( buf, "%s/%s_map.dat", All.OutputDir, OutputPrefix );
+        output_map( buf, Width, Height, DataRaw, NULL, NULL );
+    }
 
 #ifdef RUN1_DEBUG
     for( k=0; k<NTask; k++ )
@@ -194,24 +198,20 @@ void run1() {
 #endif
             }
         }
-#ifdef RUN1_DEBUG
-        char buf[100];
-        int Xs[2], Ys[2];
         Xs[0] = xmin;
         Xs[1] = xmax;
         Ys[0] = ymin;
         Ys[1] = ymax;
-        sprintf( buf, "run1_%03i.dat", ThisTask );
+        sprintf( buf, "%s/%s_map.dat", All.OutputDir, OutputPrefix );
         output_map( buf, Width_global,  Height_global, DataRaw, Xs, Ys );
-#endif
 
 #ifdef RUN1_DEBUG
-        sprintf( buf, "run1_%03i_before.dat", ThisTask );
+        sprintf( buf, "%s/%s_%03i_before.dat", All.OutputDir, OutputPrefix, ThisTask );
         output_map( buf, Width,  Height, Data, NULL, NULL );
 #endif
         pre_proc(1);
 #ifdef RUN1_DEBUG
-        sprintf( buf, "run1_%03i_after.dat", ThisTask );
+        sprintf( buf, "%s/%s_%03i_after.dat", All.OutputDir, OutputPrefix, ThisTask );
         output_map( buf, Width,  Height, Data, NULL, NULL );
 #endif
         lset(1);

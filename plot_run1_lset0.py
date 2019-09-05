@@ -10,7 +10,7 @@ from matplotlib import cm
 import sys
 
 filepre = sys.argv[1] 
-data_raw = np.loadtxt( "run1_raw_map.dat" )
+data_raw = np.loadtxt( "test_outputs/%s_map.dat"%filepre )
 print( data_raw.shape )
 
 lines    = open( './test_outputs/%s_lset_lines.dat'%filepre ).readlines()

@@ -157,16 +157,30 @@ void lset( int mode ) {
     int Iter, i, j;
     int iu, id, il, ir;
     FILE *fd;
+    double Mu, Nu, Tol, Lambda1, Lambda2, TimeStep;
+    int MaxIters;
 
     if ( mode == 0 ) {
-        PhiTol = All.Tol;
-        PhiDiffNorm = (All.Tol > 0) ? All.Tol*1000 : 1000;
+        Mu = All.Mu;
+        Nu = All.Nu;
+        Tol = All.Tol;
+        Lambda1 = All.Lambda1;
+        Lambda2 = All.Lambda2;
+        MaxIters = All.MaxIters;
+        TimeStep = All.TimeStep;
     }
     else {
-        PhiTol = All.Tol1;
-        PhiDiffNorm = (All.Tol1 > 0) ? All.Tol1*1000 : 1000;
+        Mu = All.Mu1;
+        Nu = All.Nu1;
+        Tol = All.Tol1;
+        Lambda1 = All.Lambda11;
+        Lambda2 = All.Lambda21;
+        MaxIters = All.MaxIters1;
+        TimeStep = All.TimeStep1;
     }
-    dt = All.TimeStep;
+    PhiTol = Tol;
+    dt = TimeStep;
+    PhiDiffNorm = (Tol > 0) ? Tol*1000 : 1000;
 
     edgex = malloc( sizeof(int) * Npixs );
     edgey = malloc( sizeof(int) * Npixs );
@@ -189,7 +203,7 @@ void lset( int mode ) {
 
     get_c1_c2( &c1, &c2 );
 
-    for(Iter = 1; Iter <= All.MaxIters; Iter++)
+    for(Iter = 1; Iter <= MaxIters; Iter++)
     {
         PhiPtr = Phi;
         fPtr = Data;
@@ -225,10 +239,10 @@ void lset( int mode ) {
                 /* Semi-implicit update of phi at the current point */
                 PhiLast = PhiPtr[0];
                 PhiPtr[0] = (PhiPtr[0] + Delta*(
-                        All.Mu*(PhiPtr[ir]*IDivR + PhiPtr[il]*IDivL
+                        Mu*(PhiPtr[ir]*IDivR + PhiPtr[il]*IDivL
                             + PhiPtr[id]*IDivD + PhiPtr[iu]*IDivU)
-                        - All.Nu - All.Lambda1*Dist1 + All.Lambda2*Dist2) ) /
-                    (1 + Delta*All.Mu*(IDivR + IDivL + IDivD + IDivU));
+                        - Nu - Lambda1*Dist1 + Lambda2*Dist2) ) /
+                    (1 + Delta*Mu*(IDivR + IDivL + IDivD + IDivU));
                 PhiDiff = (PhiPtr[0] - PhiLast);
                 PhiDiffNorm += PhiDiff * PhiDiff;
             }

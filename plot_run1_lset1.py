@@ -10,10 +10,10 @@ from matplotlib import cm
 import sys
 
 filepre = sys.argv[1] 
-data_raw = np.loadtxt( "run1_raw_map.dat" )
+data_raw = np.loadtxt( "./test_outputs/%s_map.dat"%filepre )
 img = np.zeros( data_raw.shape )
 N = 25
-ds = [np.loadtxt("run1_%03i.dat"%i) for i in range(N)]
+ds = [np.loadtxt("test_outputs/%s_%05i_map.dat"%(filepre,i)) for i in range(N)]
 ll = [open( './test_outputs/%s_%05i_lset_lines.dat'%(filepre, i) ).readlines() for i in range(N) ]
 
 for i in range(N):

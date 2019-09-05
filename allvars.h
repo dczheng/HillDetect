@@ -29,13 +29,14 @@ typedef struct GlobalParams {
          FileName[ MYFILENAME_MAX ],
          FileNameList[ MYFILENAME_MAX ];
 
-    int  LogNorm, LogNorm1, MaxIters, IsSavePhi,
+    int  LogNorm, LogNorm1, MaxIters, MaxIters1, IsSavePhi,
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
          DataCutting, ParalleLevel;
-    double  Mu, Nu, Tol, Tol1, Lambda1, Lambda2, TimeStep, RSigma, 
-            RSigma1,
+    double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
+            Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
+    RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd ; 
 
