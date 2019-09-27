@@ -1,7 +1,7 @@
 %---------------------- level set parameters
 Mu              1
 Nu              0
-Tol             1e-4
+Tol             1e-5
 MaxIters        10000
 Lambda1         1
 Lambda2         1
@@ -19,7 +19,7 @@ TimeStep1       0.1
 ParalleLevel   1
 InputDir        ./test_fits
 FileNameList    ./filelist.txt
-FileName        ./test_fits/large.fits
+FileName        ./test_fits/sub40Kv1.fits
 
 %---------------------- output options
 IsSavePhi       0
@@ -31,11 +31,11 @@ LogNorm         1
 LogNorm1        1
 SigmaClipping   1
 SigmaClipping1  1
-RSigma          0.5 
-RSigma1         0.3 
+RSigma          0.3 
+RSigma1         0.1 
 FTClipping      0
 DataCutting     1
-CuttingXStart   0.25
-CuttingXEnd     0.75
-CuttingYStart   0.25
-CuttingYEnd     0.75
+CuttingXStart   0.475
+CuttingXEnd     0.6
+CuttingYStart   0.6
+CuttingYEnd     0.725

@@ -136,6 +136,7 @@ void init_phi() {
         }
         fprintf( fd, "\n" );
     }
+    fclose(fd);
 */
 
 }

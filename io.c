@@ -148,4 +148,5 @@ void output_map( char *fn, int W, int H, double *D, int *Xs, int *Ys ) {
         }
         fprintf( fd, "\n" );
     }
+    fclose( fd );
 }

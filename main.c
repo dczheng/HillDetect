@@ -100,6 +100,10 @@ void run1() {
 
     for( k=0, index=0; k<gn; k++ ) {
         flag = 0;
+        /*
+        if ( len_lset0[k] < 30 ) 
+            continue;
+        */
         p = head_lset0[k];
         while( p>=0 ) {
             x = p % Width_global;
