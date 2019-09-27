@@ -7,7 +7,7 @@
 
 void read_fits( char *fits_fn ) {
 
-    put_header( "read fits" );
+    put_header( "read fits", 0 );
     fitsfile *ffp;
     char comment[ FLEN_COMMENT ];
 #define MAXDIMS 8
@@ -135,12 +135,9 @@ void free_fits(){
     free( DataRaw );
 }
 
-void output_map( char *fn, int W, int H, double *D, int *Xs, int *Ys ) {
-    FILE *fd;
+void output_map( FILE *fd, int W, int H, double *D, int *Xs, int *Ys ) {
     int i, j, xmin, ymin, xmax, ymax, ww, hh;
     (void)hh;
-
-    fd = fopen( fn, "w" );
 
     if ( Xs == NULL ) {
         xmin = 0;
@@ -174,5 +171,4 @@ void output_map( char *fn, int W, int H, double *D, int *Xs, int *Ys ) {
         }
         fprintf( fd, "\n" );
     }
-    fclose( fd );
 }

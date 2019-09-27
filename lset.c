@@ -90,10 +90,43 @@ void lset_find_line() {
 void save_line( int iter ) {
 
     //printf( "edgen: %i\n", edgen );
-    int index;
-    double s1, s2;
-    get_s1_s2( &s1, &s2 );
+    int i, *edges;
+    char buf[20];
+    double s[2];
+    hid_t h5_dataset, h5_dataspace, h5_attr, h5_group;
+    int h5_ndims;
+    hsize_t h5_dims[2]; 
+    get_s1_s2( &s[0], &s[1] );
 
+    sprintf( buf, "%i", iter );
+    h5_group = H5Gcreate( h5_LinesGroup, buf, 0 );
+
+    h5_ndims = 1;
+    h5_dims[0] = 2;
+    h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
+    h5_attr = H5Acreate( h5_group, "S1S2", H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
+    H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, s );
+    H5Aclose( h5_attr );
+    H5Sclose( h5_dataspace );
+
+    h5_ndims = 2;
+    h5_dims[0] = 2;
+    h5_dims[1] = edgen;
+    edges = malloc( sizeof(int) * edgen * 2 );
+    for ( i=0; i<edgen; i++ ) {
+        edges[i] = edgex[i] + XShift;
+        edges[i+edgen] = edgey[i] + YShift;
+    }
+    h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
+    h5_dataset = H5Dcreate( h5_group, "lines", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+    H5Dwrite( h5_dataset, H5T_NATIVE_INT, h5_dataspace, H5S_ALL, H5P_DEFAULT, edges );
+    free( edges );
+
+    H5Dclose( h5_dataset );
+    H5Sclose( h5_dataspace );
+    H5Gclose( h5_group );
+
+    /*
 #define myprintf( xy, dis ) { \
     fprintf( LsetLinesFd, "%i %i %g %g ", iter, edgen, s1, s2 ); \
     for( index=0; index<edgen; index++ ) { \
@@ -106,6 +139,7 @@ void save_line( int iter ) {
     myprintf( edgey, YShift );
 
 #undef myprintf
+    */
 
 }
 
@@ -144,9 +178,7 @@ void lset( int mode ) {
       This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
     */
 
-    char buf[100];
-    sprintf( buf, "lset, mode: %i", mode );
-    put_header( buf );
+    put_header(  "lset", mode );
 
     const int NumPixels = Width * Height;
     const int NumEl = NumPixels;
@@ -246,7 +278,6 @@ void lset( int mode ) {
             save_line( Iter );
             if ( All.IsSavePhi )
                 save_phi(Iter);
-            find_region( Iter, mode );
         }
 
         if ( mode == 0 ) {
@@ -264,8 +295,7 @@ void lset( int mode ) {
 
     }
 
-    if ( mode == 0 )
-       find_region( Iter, mode );
+    find_region( Iter, mode );
 
     free( edgex );
     free( edgey );

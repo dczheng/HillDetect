@@ -18,6 +18,7 @@
 #include "libgen.h"
 #include "protos.h"
 #include "fitsio.h"
+#include "hdf5.h"
 
 #define MYFILENAME_MAX 100
 #define SEP_LEN  50
@@ -57,9 +58,11 @@ extern int
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;
 extern GlobalParams All;
-extern FILE *LogFileFd, *LsetErrFd, *LsetLinesFd,
+extern FILE *LogFileFd, *LsetErrFd,
             *RegsFd, *EdgesFd;
 //extern_end
+
+hid_t   h5_Regs, h5_Lines, h5_LinesGroup, h5_Edges, h5_Lset0Map, h5_Lset1Map;
 
 extern int *Next, *Head, *Len, *Tail;
 

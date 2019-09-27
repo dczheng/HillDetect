@@ -57,8 +57,9 @@ writelog( "[Timer Start in `%s`]\n", __FUNCTION__ ); \
 #define mytimer_end() \
     writelog( "[Total Time in `%s`]: [%g sec]\n", __FUNCTION__, second() - timer1 ); \
 
-#define put_header( s ) {\
-    writelog( ">>> %s\n", s );\
+#define put_header( s, mode ) {\
+    if ( mode == 0 ) \
+        writelog( ">>> %s\n", s );\
     WATCH_POINT( "debug point" );\
 }
 #define put_end() {\

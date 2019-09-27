@@ -14,9 +14,12 @@ outdir = "new_outputs"
 data_raw = np.loadtxt( "./%s/%s_lset0_map.dat"%(outdir, filepre) )
 img = np.zeros( data_raw.shape )
 N = 25 
-ds = [np.loadtxt("%s/%s_lset1_raw_%04i.dat"%(outdir, filepre,i)) for i in range(N)]
-#ll = [open( './%s/%s_%05i_lset_lines.dat'%(outdir, filepre, i) ).readlines() for i in range(N) ]
 
+for i in range(N):
+    d = open( "./%s/%s_lset1_map_%03i.dat"%(outdir, filepre, i) ).readlines()
+    print( d )
+
+exit()
 vmax = ds[0].max()
 for i in range(N):
     vmax = np.max( [vmax, ds[i].max()] )
@@ -39,31 +42,3 @@ for i in range(N):
 plt.imshow( img, norm=mplc.LogNorm(), cmap=cm.jet )
 plt.savefig( 'pos.png', dpi=200 )
 
-plt.close()
-exit()
-
-T = 5
-fig, axs = plt.subplots( T, T, figsize=(10,10) )
-for i in range(T*T):
-    d = ds[i]
-    d = d[1:,:]
-    ax = axs[i//T][i%T]
-    ax.imshow( d, norm=mplc.LogNorm(), cmap=cm.jet )
-
-for i in range(T*T):
-    ax = axs[i//T][i%T]
-    d = ds[i]
-    xmin = int(d[0,0])
-    ymin = int(d[0,1])
-
-    l = ll[i]
-    m = len( l )
-    x = np.array([float(i) for i in l[m-2].split()[4:]])
-    y = np.array([float(i) for i in l[m-1].split()[4:]])
-    x = x - xmin
-    y = y - ymin
-    print( len(x) )
-
-    ax.plot( x, y, 'b.', ms=1  )
-
-plt.savefig( 'lset1_lset.png' )

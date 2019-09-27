@@ -77,7 +77,7 @@ void fof_region() {
 */
 
 
-    printf( "NPixs: %i, np; %i, nm: %i\n", Npixs, np, Npixs - np );
+    //printf( "NPixs: %i, np; %i, nm: %i\n", Npixs, np, Npixs - np );
 
     fof();
 
@@ -132,77 +132,33 @@ void fof_edge_save( int iter, int mode ) {
 
 void fof_region_save( int iter ) {
 
-    char buf[100];
-    FILE *fd;
     int i, p;
     int xi, yi;
-
-    if ( ThisTask == 0 )
-        printf( "save region ...\n" );
-    sprintf( buf, "%s/%s_region_%04i.dat", All.OutputDir, FileName, iter );
-    fd = fopen( buf, "w" );
     
     for( i=0; i<NfofRegion; i++ ) {
         p = Head[i];
-        fprintf( fd, "%4i ", Len[i] );
+        fprintf( RegsFd, "%4i ", Len[i] );
         while( p>=0 ) {
             xi = p % Width;
-            fprintf( fd, "%4i ",  xi );
+            fprintf( RegsFd, "%4i ",  xi + XShift );
             p = Next[p];
         }
-        fprintf( fd, "\n" );
+        fprintf( RegsFd, "\n" );
 
         p = Head[i];
-        fprintf( fd, "%4i ", Len[i] );
+        fprintf( RegsFd, "%4i ", Len[i] );
         while( p>=0 ) {
             yi = p / Width;
-            fprintf( fd, "%4i ",   yi );
+            fprintf( RegsFd, "%4i ",   yi + YShift );
             p = Next[p];
         }
-        fprintf( fd, "\n" );
+        fprintf( RegsFd, "\n" );
      }
-
-    fclose( fd );
 
 }
 
 void fof_catalog_save( int iter ) {
 
-    char buf[100];
-    FILE *fd;
-    int i, p;
-    int xi, yi;
-    double flux, x, y;
-
-    if ( ThisTask == 0 )
-        printf( "save catalog ...\n" );
-
-    sprintf( buf, "%s/%s_catalog_%04i.dat", All.OutputDir, FileName, iter );
-    fd = fopen( buf, "w" );
-
-    for( i=0; i<NfofRegion; i++ ) {
-        p = Head[i];
-        x = y = flux = 0;
-        while( p>=0 ) {
-            xi = p % Width;
-            yi = p / Width;
-            x += xi;
-            y += yi;
-            /*
-            if ( i == 0 )
-                printf( "%i %i %g\n", xi, yi, DataRaw[ yi*Width + xi ] );
-            */
-            flux += DataRaw[ yi * Width + xi ];
-            p = Next[p];
-        }
-
-        xi = x / Len[i];
-        yi = y / Len[i];
-
-        fprintf( fd, "%i %i %i %g\n", Len[i], xi, yi, flux );
-    }
-        
-    fclose(fd);
 }
 
 void fof_ds9_region_save( int iter ) {
@@ -260,10 +216,10 @@ void find_region( int iter, int mode ) {
 
     //fof_ds9_region_save( iter );
 
-    //fof_reset();
-    //fof_region();
-    //fof_region_save( iter );
-    //fof_catalog_save( iter );
+    fof_reset();
+    fof_region();
+    fof_region_save( iter );
+    fof_catalog_save( iter );
 
     fprintf( LogFileFd, "[fof], edge: %i, region: %i\n", NfofEdge, NfofRegion );
     put_end();

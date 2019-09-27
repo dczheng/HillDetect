@@ -62,7 +62,7 @@ void data_cuting( int mode ) {
     if ( mode == 1 )
         return;
 
-    put_header( "data cutting" );
+    put_header( "data cutting", mode );
     HStartCut = Height * All.CuttingYStart;
     HEndCut = Height * All.CuttingYEnd;
     WStartCut = Width * All.CuttingXStart;
@@ -229,7 +229,8 @@ void ft_clipping( int mode ){
 
 void pre_proc( int mode ) {
     
-    put_header( "pre proc" );
+    put_header( "pre proc", mode );
+
     if ( All.FTClipping )
         ft_clipping( mode );
 

@@ -18,7 +18,7 @@ void read_parameters( char *fn ) {
         buf1[200], buf2[200], buf3[200];
     int id[MAXTAGS], nt, i, j, errflag=0;;
 
-    put_header( "read parameters" );
+    put_header( "read parameters", 0 );
     if ( ThisTask == 0 ) {
         fd = fopen( fn, "r" );
         if ( NULL == fd ){

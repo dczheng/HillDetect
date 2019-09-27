@@ -1,15 +1,19 @@
 FITS_INCL  =
 FITS_LIBS  = -lcfitsio
 
+HDF5_INCL  =
+HDF5_OPTS  = -DH5_USE_16_API
+HDF5_LIBS  = -lhdf5
+
 FFTW_INCL  = 
 FFTW_LIBS  = -ldrfftw -ldfftw
 
 PYTHON    ?= $(shell which python3)
 
-LIBS       = $(GSL_LIBS) $(FITS_LIBS) $(FFTW_LIBS) -lm
-INCL       = $(GSL_INCL) $(FITS_INCL) $(FFTW_INCL)
+LIBS       = $(GSL_LIBS) $(FITS_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) -lm
+INCL       = $(GSL_INCL) $(FITS_INCL) $(FFTW_INCL) $(HDF5_INCL)
 
-OPTS       = $(FITS_OPTS) -Wall #-O2 #-O3
+OPTS       = $(FITS_OPTS)  $(HDF5_OPTS) -Wall #-O2 #-O3
 DEBUG     ?=
 CC         =  mpicc 
 

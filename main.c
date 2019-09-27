@@ -4,6 +4,7 @@
 */
 
 #include "allvars.h"
+//#define RUN_DEBUG
 
 int *next_lset0, *head_lset0, *len_lset0, gn;
 
@@ -52,21 +53,38 @@ void run0() {
 void run_first_finder() {
 
     char buf[100];
+    hid_t h5_dataset, h5_dataspace;
+    int h5_ndims;
+    hsize_t h5_dims[2];
 
     pre_proc(0);
     put_sep;
 
-    put_header( "run first finder" );
+    put_header( "run first finder", 0 );
     mytimer_start();
+
     if ( ThisTask == 0 ) {
-        sprintf( buf, "%s/%s_lset0_map.dat", All.OutputDir, InputBaseName );
-        output_map( buf, WidthGlobal, HeightGlobal, DataRaw, NULL, NULL );
+        sprintf( buf, "%s/%s_lset0_map.hdf5", All.OutputDir, InputBaseName );
+        h5_Lset0Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        h5_ndims = 2;
+        h5_dims[0] = HeightGlobal;
+        h5_dims[1] = WidthGlobal;
+        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_dataset = H5Dcreate( h5_Lset0Map, "map", H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
+        H5Dwrite( h5_dataset, H5T_NATIVE_DOUBLE, h5_dataspace, H5S_ALL, H5P_DEFAULT, DataRaw );
+        H5Dclose( h5_dataset );
+        H5Sclose( h5_dataspace );
+        H5Fclose( h5_Lset0Map );
     }
 
     if ( ThisTask == 0 ) {
         LsetErrFd = myfopen( "w", "%s/%s_lset0_err.dat", All.OutputDir, InputBaseName );
-        LsetLinesFd = myfopen( "w","%s/%s_lset0_lines.dat", All.OutputDir, InputBaseName );
         EdgesFd = myfopen( "w","%s/%s_lset0_edges.dat", All.OutputDir, InputBaseName );
+
+        sprintf( buf, "%s/%s_lset0_lines.hdf5", All.OutputDir, InputBaseName );
+        h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        h5_LinesGroup = H5Gcreate( h5_Lines, "Lines", 0 );
+
     }
 
     XShift = 0;
@@ -89,8 +107,10 @@ void run_first_finder() {
 
     if ( ThisTask == 0 ) {
         fclose( LsetErrFd );
-        fclose( LsetLinesFd );
         fclose( EdgesFd );
+        H5Gclose( h5_LinesGroup );
+        H5Fclose( h5_Lines );
+
     }
     mytimer_end();
 
@@ -98,11 +118,14 @@ void run_first_finder() {
 
 void run_second_finder() {
 
-   int i, p, j, k,
-         Xs[2], Ys[2],
+    char buf[100];
+    hid_t h5_dataset, h5_dataspace, h5_group, h5_attr;
+    int h5_ndims;
+    hsize_t h5_dims[2];
+
+    int i, p, j, k, Xs[2],
          xmin, xmax, ymin, ymax, x, y, w, h, flag, index;
-    char buf[ MYFILENAME_MAX ];
-    put_header( "run second finder" );
+    put_header( "run second finder", 0 );
 
 //#define FIXEDSIZE
 #ifdef FIXEDSIZE
@@ -111,7 +134,6 @@ void run_second_finder() {
 #ifdef ADD_PAD
     int lmin;
 #endif
-
 
 #ifdef ADD_PAD
     lmin = 50;
@@ -145,15 +167,19 @@ void run_second_finder() {
 
     LsetErrFd = myfopen( "w", "%s/%s_lset1_err_%03i.dat",
                 All.OutputDir, InputBaseName, ThisTask );
-    LsetLinesFd = myfopen( "w","%s/%s_lset1_lines_%03i.dat",
-                All.OutputDir, InputBaseName, ThisTask );
     EdgesFd = myfopen( "w","%s/%s_lset1_edges_%03i.dat",
                 All.OutputDir, InputBaseName, ThisTask );
     RegsFd = myfopen( "w","%s/%s_lset1_regs_%03i.dat",
                 All.OutputDir, InputBaseName, ThisTask );
 
-#define RUN1_DEBUG
-#ifdef RUN1_DEBUG
+    sprintf( buf,"%s/%s_lset1_lines_%03i.hdf5",
+                All.OutputDir, InputBaseName, ThisTask );
+    h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    sprintf( buf, "%s/%s_lset1_%03i.hdf5", All.OutputDir, InputBaseName, ThisTask );
+    h5_Lset1Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+#ifdef RUN_DEBUG
     for( k=0; k<NTask; k++ )
 #else
     for( k=0; k<gn; k++ )
@@ -225,36 +251,48 @@ void run_second_finder() {
             }
         }
         Xs[0] = xmin;
-        Xs[1] = xmax;
-        Ys[0] = ymin;
-        Ys[1] = ymax;
-
-        sprintf( buf, "%s/%s_lset1_raw_%04i.dat",
-        All.OutputDir, InputBaseName, k );
-        output_map( buf, WidthGlobal,  HeightGlobal, DataRaw, Xs, Ys );
-
-        sprintf( buf, "%s/%s_lset1_before_pre_proc_%04i.dat",
-        All.OutputDir, InputBaseName, k );
-        output_map( buf, Width,  Height, Data, NULL, NULL );
-
-        pre_proc(1);
-
-        sprintf( buf, "%s/%s_lset1_after_pre_proc_%04i.dat",
-        All.OutputDir, InputBaseName, k );
-        output_map( buf, Width,  Height, Data, NULL, NULL );
+        Xs[1] = ymin;
 
         fprintf( LsetErrFd,   "Group: %03i\n", k);
-        fprintf( LsetLinesFd, "Group: %03i\n", k);
         fprintf( EdgesFd,     "Group: %03i\n", k);
         fprintf( RegsFd,      "Group: %03i\n", k);
+
+        sprintf( buf, "Group%i", k );
+        h5_group = H5Gcreate( h5_Lset1Map, buf, 0 );
+
+        sprintf( buf, "Group%i", k );
+        h5_LinesGroup = H5Gcreate( h5_Lines, buf, 0 );
+
+        h5_ndims = 1;
+        h5_dims[0] = 2;
+        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_attr = H5Acreate( h5_group, "REPIXS", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+        H5Aclose( h5_attr );
+        H5Sclose( h5_dataspace );
+
+        h5_ndims = 2;
+        h5_dims[0] = Height;
+        h5_dims[1] = Width;
+        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_dataset = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
+        H5Dwrite( h5_dataset, H5T_NATIVE_DOUBLE, h5_dataspace, H5S_ALL, H5P_DEFAULT, Data );
+        H5Dclose( h5_dataset );
+        H5Sclose( h5_dataspace );
+
+
+        pre_proc(1);
         lset(1);
+
+        H5Gclose( h5_group );
+        H5Gclose( h5_LinesGroup );
 
     }
 
     fclose( LsetErrFd );
-    fclose( LsetLinesFd );
     fclose( EdgesFd );
     fclose( RegsFd );
+    H5Fclose( h5_Lset1Map );
     put_end();
 }
 
@@ -280,7 +318,7 @@ void run() {
 }
 
 void global_init() {
-    put_header( "global init" );
+    put_header( "global init", 0 );
     InputBaseName = basename( All.FileName );
     XShift = YShift = 0;
     create_dir( All.OutputDir );
