@@ -99,8 +99,6 @@ void find_region_free() {
 
 void fof_edge_save( int iter, int mode ) {
 
-    char buf[100];
-    FILE *fd;
     int i, p;
     int xi, yi;
 
@@ -108,33 +106,27 @@ void fof_edge_save( int iter, int mode ) {
         if ( ThisTask )
             return;
 
-    writelog( "save edge ...\n" );
-    if ( mode == 0 )
-        sprintf( buf, "%s/%s_edge.dat", All.OutputDir, OutputPrefix );
-    else
-        sprintf( buf, "%s/%s_edge_%05i.dat", All.OutputDir, OutputPrefix, iter );
+    //writelog( "save edge ...\n" );
 
-    fd = fopen( buf, "w" );
     for( i=0; i<NfofEdge; i++ ) {
         p = Head[i];
-        fprintf( fd, "%4i ", Len[i] );
+        fprintf( EdgesFd, "%4i ", Len[i] );
         while( p>=0 ) {
             xi = p % Width;
-            fprintf( fd, "%4i ",  xi + XShift );
+            fprintf( EdgesFd, "%4i ",  xi + XShift );
             p = Next[p];
         }
-        fprintf( fd, "\n" );
+        fprintf( EdgesFd, "\n" );
 
         p = Head[i];
-        fprintf( fd, "%4i ", Len[i] );
+        fprintf( EdgesFd, "%4i ", Len[i] );
         while( p>=0 ) {
             yi = p / Width;
-            fprintf( fd, "%4i ",  yi + YShift );
+            fprintf( EdgesFd, "%4i ",  yi + YShift );
             p = Next[p];
         }
-        fprintf( fd, "\n" );
+        fprintf( EdgesFd, "\n" );
      }
-    fclose( fd );
 
 }
 
@@ -266,13 +258,14 @@ void find_region( int iter, int mode ) {
     if ( mode == 0 )
         return;
 
-    fof_ds9_region_save( iter );
+    //fof_ds9_region_save( iter );
 
-    fof_reset();
-    fof_region();
-    fof_region_save( iter );
-    fof_catalog_save( iter );
+    //fof_reset();
+    //fof_region();
+    //fof_region_save( iter );
+    //fof_catalog_save( iter );
 
     fprintf( LogFileFd, "[fof], edge: %i, region: %i\n", NfofEdge, NfofRegion );
+    put_end();
 
 }

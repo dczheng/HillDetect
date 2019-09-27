@@ -8,13 +8,13 @@
 }
 
 #define myfopen( opt, fmt, ... ) ({\
-    char buf[100];\
+    char fopenbuf[100];\
     FILE *fd;\
     do {\
-        sprintf( buf, fmt, ##__VA_ARGS__ );\
-        fd = fopen( buf, opt );\
+        sprintf( fopenbuf, fmt, ##__VA_ARGS__ );\
+        fd = fopen( fopenbuf, opt );\
         if ( NULL == fd ) {\
-            printf( "can not open `%s`.\n", buf );\
+            printf( "can not open `%s`.\n", fopenbuf );\
             endrun("");\
         }\
     }while(0);\
@@ -38,13 +38,6 @@
     endrun0( "error info: %s\n", s ); \
 }
 
-/*
-#define endrun( i ) {\
-    endrun0( "error level: %i\n", i ); \
-}
-*/
-
-
 #define do_sync MPI_Barrier( MPI_COMM_WORLD );
 
 #define put_sep writelog( sep_str );
@@ -64,3 +57,13 @@ writelog( "[Timer Start in `%s`]\n", __FUNCTION__ ); \
 #define mytimer_end() \
     writelog( "[Total Time in `%s`]: [%g sec]\n", __FUNCTION__, second() - timer1 ); \
 
+#define put_header( s ) {\
+    writelog( ">>> %s\n", s );\
+    WATCH_POINT( "debug point" );\
+}
+#define put_end() {\
+    WATCH_POINT( "debug point" );\
+}
+
+#define writelog1( a ) writelog( "%-20s: %i\n", #a, a )
+#define writelog2( a ) writelog( "%-20s: %g\n", #a, a )

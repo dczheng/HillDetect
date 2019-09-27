@@ -9,8 +9,6 @@
 
 #include "allvars.h"
 
-FILE *fdlf;
-
 void get_c1_c2( double *c1, double *c2 ) {
 
     int i;
@@ -50,13 +48,11 @@ void get_s1_s2( double *s1, double *s2 ) {
 
 void save_phi( int iter ) {
 
-    char buf[110];
     FILE *fd;
     int i, j;
     int index;
 
-    sprintf( buf, "%s/%s_phi_%i", All.PhiDir, OutputPrefix, iter );
-    fd = fopen( buf, "w" );
+    fd = myfopen( "w", "%s/%s_phi_%i", All.PhiDir, InputBaseName, iter );
 
     for( i=0, index=0; i<Height; i++ ) {
         for( j=0; j<Width; j++, index++ ) {
@@ -99,11 +95,11 @@ void save_line( int iter ) {
     get_s1_s2( &s1, &s2 );
 
 #define myprintf( xy, dis ) { \
-    fprintf( fdlf, "%i %i %g %g ", iter, edgen, s1, s2 ); \
+    fprintf( LsetLinesFd, "%i %i %g %g ", iter, edgen, s1, s2 ); \
     for( index=0; index<edgen; index++ ) { \
-        fprintf( fdlf, "%i ", xy[index] + dis ); \
+        fprintf( LsetLinesFd, "%i ", xy[index] + dis ); \
     } \
-    fprintf( fdlf, "\n" ); \
+    fprintf( LsetLinesFd, "\n" ); \
 }
 
     myprintf( edgex, XShift );
@@ -148,6 +144,10 @@ void lset( int mode ) {
       This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
     */
 
+    char buf[100];
+    sprintf( buf, "lset, mode: %i", mode );
+    put_header( buf );
+
     const int NumPixels = Width * Height;
     const int NumEl = NumPixels;
     const double *fPtr;
@@ -157,7 +157,6 @@ void lset( int mode ) {
     double Dist1, Dist2, PhiTol, dt, c1, c2;
     int Iter, i, j;
     int iu, id, il, ir;
-    FILE *fd;
     double Mu, Nu, Tol, Lambda1, Lambda2, TimeStep;
     int MaxIters;
 
@@ -188,19 +187,6 @@ void lset( int mode ) {
 
     init_phi();
     find_region_init();
-
-    fd = myfopen( "w", "%s/%s_lset_err.dat", All.OutputDir, OutputPrefix );
-
-    if ( mode == 1 ) {
-        fdlf = myfopen( "w", "%s/%s_lset_lines.dat", 
-            All.OutputDir, OutputPrefix );
-    }
-    if ( mode == 0 ) {
-        if ( ThisTask == 0 )
-            fdlf = myfopen( "w", "%s/%s_lset_lines.dat", 
-                All.OutputDir, OutputPrefix );
-    }
-    
 
     get_c1_c2( &c1, &c2 );
 
@@ -252,19 +238,21 @@ void lset( int mode ) {
         PhiDiffNorm = sqrt(PhiDiffNorm/NumEl);
         get_c1_c2( &c1, &c2 );
 
-        fprintf( fd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
-                            Iter, PhiDiffNorm, c1, c2 );
         lset_find_line();
 
         if ( mode == 1 ) {
+            fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+                          Iter, PhiDiffNorm, c1, c2 );
             save_line( Iter );
             if ( All.IsSavePhi )
                 save_phi(Iter);
-            //find_region( Iter, mode );
+            find_region( Iter, mode );
         }
 
         if ( mode == 0 ) {
             if ( ThisTask == 0 ) {
+                fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+                          Iter, PhiDiffNorm, c1, c2 );
                 save_line( Iter );
                 if ( All.IsSavePhi )
                     save_phi(Iter);
@@ -282,17 +270,7 @@ void lset( int mode ) {
     free( edgex );
     free( edgey );
     free( Phi );
-
-    if ( mode == 1 ) {
-//        find_region_free();
-        fclose( fdlf );
-    }
-    if ( mode == 0 ) {
-        if ( ThisTask == 0 )
-            fclose( fdlf );
-    }
-
-    fclose( fd );
+    put_end();
 
 }
 

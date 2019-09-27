@@ -23,7 +23,7 @@ FileName        ./test_fits/sub40Kv1.fits
 
 %---------------------- output options
 IsSavePhi       0
-OutputDir       ./test_outputs
+OutputDir       ./new_outputs
 PhiDir          ./Phi
 
 %---------------------- preprocess options 

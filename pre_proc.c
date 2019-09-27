@@ -56,33 +56,43 @@ void sigma_clipping( int mode ) {
 
 void data_cuting( int mode ) {
 
-    int i, j, h0, h1, w0, w1;
+    int i, j;
     int index;
 
     if ( mode == 1 )
         return;
 
-    h0 = Height * All.CuttingYStart;
-    h1 = Height * All.CuttingYEnd;
-    w0 = Height * All.CuttingXStart;
-    w1 = Height * All.CuttingXEnd;
+    put_header( "data cutting" );
+    HStartCut = Height * All.CuttingYStart;
+    HEndCut = Height * All.CuttingYEnd;
+    WStartCut = Width * All.CuttingXStart;
+    WEndCut = Width * All.CuttingXEnd;
     //printf( "%i %i %i %i\n", Height, Width, h, w  );
 
-    if ( h1<=h0 || w1<=w0 ) {
+    if ( HEndCut<=HStartCut || WEndCut<=WStartCut ) {
         endrun( "Invalid cutting parameters." );
     }
 
+    writelog( "Height: %i, Width: %i\n", Height, Width );
+    writelog( "region: (%g, %g), (%g, %g)\n",
+                All.CuttingYStart, All.CuttingYEnd, 
+                All.CuttingXStart, All.CuttingXEnd );
+    writelog( "region: (%i, %i), (%i, %i)\n",
+            HStartCut, HEndCut, WStartCut, WEndCut );
+
     //output_data( "before_cutting.dat" );
 
-    for( i=h0, index=0; i<h1; i++ )
-        for ( j=w0; j<w1; j++, index++ ) {
+    for( i=HStartCut, index=0; i<HEndCut; i++ )
+        for ( j=WStartCut; j<WEndCut; j++, index++ ) {
             Data[index] = Data[i*Width+j];
             DataRaw[index] = DataRaw[i*Width+j];
        }
-    Height = h1 - h0;
-    Width = w1 - w0;
-    Npixs = Height * Width;
 
+    HeightGlobal = Height = HEndCut - HStartCut;
+    WidthGlobal = Width = WEndCut - WStartCut;
+    NpixsGlobal = Npixs = Height * Width;
+
+    put_end();
     //output_data( "after_cutting.dat" );
     //endrun( "test" );
 }
@@ -219,6 +229,7 @@ void ft_clipping( int mode ){
 
 void pre_proc( int mode ) {
     
+    put_header( "pre proc" );
     if ( All.FTClipping )
         ft_clipping( mode );
 
@@ -228,4 +239,5 @@ void pre_proc( int mode ) {
         data_cuting( mode );
 
     normalize( mode );
+    put_end();
 }

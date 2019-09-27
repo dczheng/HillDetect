@@ -5,7 +5,7 @@
 
 #include "allvars.h"
 
-char *bname;
+int *next_lset0, *head_lset0, *len_lset0, gn;
 
 void run0() {
 
@@ -49,14 +49,61 @@ void run0() {
     free( AllFileNames );
 }
 
-void run1() {
+void run_first_finder() {
 
-    int *next_lset0, *head_lset0, *len_lset0, gn,
-         i, p, j, k, Width_global, Height_global,
+    char buf[100];
+
+    pre_proc(0);
+    put_sep;
+
+    put_header( "run first finder" );
+    mytimer_start();
+    if ( ThisTask == 0 ) {
+        sprintf( buf, "%s/%s_lset0_map.dat", All.OutputDir, InputBaseName );
+        output_map( buf, WidthGlobal, HeightGlobal, DataRaw, NULL, NULL );
+    }
+
+    if ( ThisTask == 0 ) {
+        LsetErrFd = myfopen( "w", "%s/%s_lset0_err.dat", All.OutputDir, InputBaseName );
+        LsetLinesFd = myfopen( "w","%s/%s_lset0_lines.dat", All.OutputDir, InputBaseName );
+        EdgesFd = myfopen( "w","%s/%s_lset0_edges.dat", All.OutputDir, InputBaseName );
+    }
+
+    XShift = 0;
+    YShift = 0;
+    lset(0);
+
+    writelog( "NfofEdge: %i\n", NfofEdge );
+    next_lset0 = malloc( sizeof(int) * Npixs );
+    head_lset0 = malloc( sizeof(int) * Npixs );
+    len_lset0 = malloc( sizeof(int) * Npixs );
+    put_sep;
+
+    gn = NfofEdge;
+    memcpy( next_lset0, Next, sizeof(int) * Npixs );
+    memcpy( head_lset0, Head, sizeof(int) * Npixs );
+    memcpy( len_lset0,  Len, sizeof(int) * Npixs );
+    find_region_free();
+
+    do_sync;
+
+    if ( ThisTask == 0 ) {
+        fclose( LsetErrFd );
+        fclose( LsetLinesFd );
+        fclose( EdgesFd );
+    }
+    mytimer_end();
+
+}
+
+void run_second_finder() {
+
+   int i, p, j, k,
          Xs[2], Ys[2],
          xmin, xmax, ymin, ymax, x, y, w, h, flag, index;
-    double t0, t1;
     char buf[ MYFILENAME_MAX ];
+    put_header( "run second finder" );
+
 //#define FIXEDSIZE
 #ifdef FIXEDSIZE
     int wh;
@@ -65,35 +112,7 @@ void run1() {
     int lmin;
 #endif
 
-//#define RUN1_DEBUG
-    read_fits( All.FileName );
-    bname = basename( All.FileName );
-    pre_proc(0);
 
-    put_sep;
-    sprintf( OutputPrefix, "%s", bname );
-    writelog( "run lset on level 0 ...\n" );
-    t0 = second();
-    XShift = 0;
-    YShift = 0;
-    lset(0);
-    t1 = second();
-    writelog( "time :%.3f sec\n", t1-t0 );
-    writelog( "run lset on level 0 ... done.\n" );
-    writelog( "NfofEdge: %i\n", NfofEdge );
-    put_sep;
-
-    gn = NfofEdge;
-    Width_global = Width;
-    Height_global = Height;
-    next_lset0 = malloc( sizeof(int) * Npixs );
-    head_lset0 = malloc( sizeof(int) * Npixs );
-    len_lset0 = malloc( sizeof(int) * Npixs );
-    memcpy( next_lset0, Next, sizeof(int) * Npixs );
-    memcpy( head_lset0, Head, sizeof(int) * Npixs );
-    memcpy( len_lset0,  Len, sizeof(int) * Npixs );
-    find_region_free();
-    do_sync;
 #ifdef ADD_PAD
     lmin = 50;
 #endif
@@ -106,8 +125,8 @@ void run1() {
         */
         p = head_lset0[k];
         while( p>=0 ) {
-            x = p % Width_global;
-            y = p / Width_global;
+            x = p % WidthGlobal;
+            y = p / WidthGlobal;
             p = next_lset0[p];
             if ( x == 0 || y == 0 ) {
                 flag = 1;
@@ -124,11 +143,16 @@ void run1() {
     gn = index;
     writelog( "gn: %i\n", gn );
 
-    if ( ThisTask == 0 ) {
-        sprintf( buf, "%s/%s_map.dat", All.OutputDir, OutputPrefix );
-        output_map( buf, Width, Height, DataRaw, NULL, NULL );
-    }
+    LsetErrFd = myfopen( "w", "%s/%s_lset1_err_%03i.dat",
+                All.OutputDir, InputBaseName, ThisTask );
+    LsetLinesFd = myfopen( "w","%s/%s_lset1_lines_%03i.dat",
+                All.OutputDir, InputBaseName, ThisTask );
+    EdgesFd = myfopen( "w","%s/%s_lset1_edges_%03i.dat",
+                All.OutputDir, InputBaseName, ThisTask );
+    RegsFd = myfopen( "w","%s/%s_lset1_regs_%03i.dat",
+                All.OutputDir, InputBaseName, ThisTask );
 
+#define RUN1_DEBUG
 #ifdef RUN1_DEBUG
     for( k=0; k<NTask; k++ )
 #else
@@ -142,8 +166,8 @@ void run1() {
         p = head_lset0[k];
         flag = 0;
         while(p>=0) {
-            x = p % Width_global;
-            y = p / Width_global;
+            x = p % WidthGlobal;
+            y = p / WidthGlobal;
             xmin = ( x<xmin ) ? x : xmin;
             xmax = ( x>xmax ) ? x : xmax;
             ymin = ( y<ymin ) ? y : ymin;
@@ -191,14 +215,12 @@ void run1() {
         Height = h;
         Npixs = w * h;
 #endif
-        sprintf( OutputPrefix, "%s_%05i", bname, k );
-
         for( i=ymin; i<ymax; i++ ) {
             for( j=xmin; j<xmax; j++ ) {
 #ifdef FIXEDSIZE
-                Data[(i-ymin)*wh+(j-xmin)] = DataRaw[i*Width_global+j];
+                Data[(i-ymin)*wh+(j-xmin)] = DataRaw[i*WidthGlobal+j];
 #else
-                Data[(i-ymin)*w+(j-xmin)] = DataRaw[i*Width_global+j];
+                Data[(i-ymin)*w+(j-xmin)] = DataRaw[i*WidthGlobal+j];
 #endif
             }
         }
@@ -206,40 +228,75 @@ void run1() {
         Xs[1] = xmax;
         Ys[0] = ymin;
         Ys[1] = ymax;
-        sprintf( buf, "%s/%s_map.dat", All.OutputDir, OutputPrefix );
-        output_map( buf, Width_global,  Height_global, DataRaw, Xs, Ys );
 
-        sprintf( buf, "%s/%s_before.dat", All.OutputDir, OutputPrefix );
+        sprintf( buf, "%s/%s_lset1_raw_%04i.dat",
+        All.OutputDir, InputBaseName, k );
+        output_map( buf, WidthGlobal,  HeightGlobal, DataRaw, Xs, Ys );
+
+        sprintf( buf, "%s/%s_lset1_before_pre_proc_%04i.dat",
+        All.OutputDir, InputBaseName, k );
         output_map( buf, Width,  Height, Data, NULL, NULL );
 
         pre_proc(1);
 
-        sprintf( buf, "%s/%s_after.dat", All.OutputDir, OutputPrefix );
+        sprintf( buf, "%s/%s_lset1_after_pre_proc_%04i.dat",
+        All.OutputDir, InputBaseName, k );
         output_map( buf, Width,  Height, Data, NULL, NULL );
 
+        fprintf( LsetErrFd,   "Group: %03i\n", k);
+        fprintf( LsetLinesFd, "Group: %03i\n", k);
+        fprintf( EdgesFd,     "Group: %03i\n", k);
+        fprintf( RegsFd,      "Group: %03i\n", k);
         lset(1);
 
     }
 
+    fclose( LsetErrFd );
+    fclose( LsetLinesFd );
+    fclose( EdgesFd );
+    fclose( RegsFd );
+    put_end();
+}
+
+
+void run() {
+
+    read_fits( All.FileName );
+    put_sep;
+
+    next_lset0 = malloc( sizeof(int) * Npixs );
+    head_lset0 = malloc( sizeof(int) * Npixs );
+    len_lset0 = malloc( sizeof(int) * Npixs );
+
+    run_first_finder();
+    run_second_finder();
+
     free( next_lset0 );
     free( head_lset0 );
     free( len_lset0 );
+
     free_fits();
 
 }
 
 void global_init() {
-
+    put_header( "global init" );
+    InputBaseName = basename( All.FileName );
     XShift = YShift = 0;
     create_dir( All.OutputDir );
     create_dir( All.PhiDir );
+    put_end();
 
 }
 void global_free() {
 }
 
+void pipeline_test() {
+}
+
 int main( int argc, char **argv ) {
 
+    char *bname;
     MPI_Init( &argc, &argv );
     MPI_Comm_rank( MPI_COMM_WORLD, &ThisTask );
     MPI_Comm_size( MPI_COMM_WORLD, &NTask );
@@ -259,21 +316,38 @@ int main( int argc, char **argv ) {
     do_sync;
 
     LogFileFd = myfopen( "w", "./fgext.log/%s_%03i.log", bname, ThisTask );
-    read_parameters( argv[1] );
-    global_init();
+    put_sep;
 
+#ifdef ZDEBUG
+    writelog( "Assign `SIGSEGV` to signal hander function.\n" );
+    signal( SIGSEGV, signal_hander );
+    init_zsig();
+    put_sep;
+#endif
+
+    read_parameters( argv[1] );
+    put_sep;
+
+    global_init();
+    put_sep;
+
+//#define PIPELINE_TEST
+#ifdef PIPELINE_TEST
+    pipeline_test();
+#else
     switch (All.ParalleLevel) {
         case 0:
             run0();
             break;
         case 1:
-            run1();
+            run();
             break;
         default:
             printf( "Unsupported paralle level.\n" );
             endrun( "" );
     } 
     put_sep;
+#endif
 
     global_free();
     fclose( LogFileFd );

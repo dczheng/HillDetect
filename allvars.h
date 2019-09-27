@@ -44,18 +44,26 @@ typedef struct GlobalParams {
 
 //extern_start
 extern char sep_str[SEP_LEN];
-extern double *Data, *Phi, *DataRaw;
+extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
+              FREQ;
 extern int 
-            Width, Height, ThisTask, NTask, FileNum,
+            Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
+            ThisTask, NTask, FileNum,
             NfofEdge, NfofRegion,
             *edgex, *edgey,
-            Npixs, edgen, XShift, YShift;
+            Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
+            HStartCut, HEndCut, WStartCut, WEndCut;
 
-extern char FileName[ MYFILENAME_MAX ], OutputPrefix[ MYFILENAME_MAX ],
-            *AllFileNames;
+extern char FileName[ MYFILENAME_MAX ],
+            *AllFileNames, *InputBaseName;
 extern GlobalParams All;
-extern FILE *LogFileFd;
+extern FILE *LogFileFd, *LsetErrFd, *LsetLinesFd,
+            *RegsFd, *EdgesFd;
 //extern_end
 
 extern int *Next, *Head, *Len, *Tail;
+
+#define ZDEBUG
+
+#include "signal_hander.h"
 

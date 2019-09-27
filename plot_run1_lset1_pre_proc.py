@@ -10,10 +10,11 @@ from matplotlib import cm
 import sys
 
 filepre = sys.argv[1] 
-data_raw = np.loadtxt( "test_outputs/%s_map.dat"%filepre )
+outdir = "new_outputs"
+data_raw = np.loadtxt( "%s/%s_map.dat"%(outdir, filepre) )
 img = np.zeros( data_raw.shape )
 N = 25
-ds = [np.loadtxt("test_outputs/%s_%05i_before.dat"%(filepre,i)) for i in range(N)]
+ds = [np.loadtxt("%s/%s_%05i_before.dat"%(outdir, filepre,i)) for i in range(N)]
 
 T = 5
 fig, axs = plt.subplots( T, T, figsize=(10,10) )
@@ -27,7 +28,7 @@ plt.savefig( 'lset1_lset-before.png' )
 
 plt.close()
 
-ds = [np.loadtxt("test_outputs/%s_%05i_after.dat"%(filepre,i)) for i in range(N)]
+ds = [np.loadtxt("%s/%s_%05i_after.dat"%(outdir, filepre,i)) for i in range(N)]
 
 T = 5
 fig, axs = plt.subplots( T, T, figsize=(10,10) )

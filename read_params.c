@@ -18,9 +18,9 @@ void read_parameters( char *fn ) {
         buf1[200], buf2[200], buf3[200];
     int id[MAXTAGS], nt, i, j, errflag=0;;
 
+    put_header( "read parameters" );
     if ( ThisTask == 0 ) {
         fd = fopen( fn, "r" );
-        printf( "read parameters ...\n" );
         if ( NULL == fd ){
             printf( "Faile to Open Parameter file %s\n", fn );
         }
@@ -46,15 +46,15 @@ void read_parameters( char *fn ) {
                 switch ( id[j] ) {
                     case REAL:
                         *( (double*)addr[j] ) = atof( buf2 );
-                        printf(  "%-15s %g\n", buf1, *((double*)addr[j]) );
+                        writelog(  "[D] %-15s : %g\n", buf1, *((double*)addr[j]) );
                         break;
                     case INT:
                         *( (int*)addr[j] ) = atoi( buf2 );
-                        printf( "%-15s %d\n", buf1, *((int*)addr[j]) );
+                        writelog( "[I] %-15s : %d\n", buf1, *((int*)addr[j]) );
                         break;
                     case STRING:
                         strcpy( (char*)addr[j], buf2 );
-                        printf( "%-15s %s\n", buf1, buf2 );
+                        writelog( "[S] %-15s : %s\n", buf1, buf2 );
                         break;
                 }
             }
@@ -75,6 +75,6 @@ void read_parameters( char *fn ) {
      }
      MPI_Bcast( &All, sizeof( GlobalParams ), MPI_BYTE, 0, MPI_COMM_WORLD );
 
-     put_sep;
-    
+     put_end();
+
 }

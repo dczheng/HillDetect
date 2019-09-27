@@ -7,7 +7,9 @@
 
 void read_fits( char *fits_fn ) {
 
+    put_header( "read fits" );
     fitsfile *ffp;
+    char comment[ FLEN_COMMENT ];
 #define MAXDIMS 8
     int naxis, status=0, bitpix, anynull;
     long naxes[MAXDIMS], na, start_pos[MAXDIMS], i;
@@ -46,12 +48,35 @@ void read_fits( char *fits_fn ) {
 
     //myfree(tmp);
 
+    fits_read_key( ffp, TINT, "CRPIX1", &CRPIX1, comment, &status );
+    fits_read_key( ffp, TINT, "CRPIX2", &CRPIX2, comment, &status );
+
+    fits_read_key( ffp, TDOUBLE, "CRVAL1", &CRVAL1, comment, &status );
+    fits_read_key( ffp, TDOUBLE, "CRVAL2", &CRVAL2, comment, &status );
+
+    fits_read_key( ffp, TDOUBLE, "CDELT1", &CDELT1, comment, &status );
+    fits_read_key( ffp, TDOUBLE, "CDELT2", &CDELT2, comment, &status );
+
+    fits_read_key( ffp, TDOUBLE, "CRVAL3", &FREQ, comment, &status );
+
+    writelog1( CRPIX1 );
+    writelog1( CRPIX2 );
+
+    writelog2( CRVAL1 );
+    writelog2( CRVAL2 );
+
+    writelog2( CDELT1 );
+    writelog2( CDELT2 );
+
+    FREQ /= 1e6;
+    writelog2( FREQ );
+
     fits_close_file(ffp, &status);
     fits_report_error(stderr, status);
 
-    Width = naxes[0];
-    Height = naxes[1];
-    Npixs = naxes[0] * naxes[1];
+    WidthGlobal = Width = naxes[0];
+    HeightGlobal = Height = naxes[1];
+    NpixsGlobal = Npixs = naxes[0] * naxes[1];
 
     //print_data( Data, 230, 290, 580, 640, 0 );
 
@@ -61,6 +86,7 @@ void read_fits( char *fits_fn ) {
 
     //print_data( DataRaw, 230, 640, 580, 640, 0 );
 
+    put_end();
 }
 
 void read_file_names() {
