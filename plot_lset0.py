@@ -30,7 +30,7 @@ axs[0].imshow( map0, norm=mplc.LogNorm(), cmap=cm.jet )
 axs[0].plot( lines[0,:], lines[1,:], 'b.', ms=0.5  )
 
 img = np.zeros( map0.shape )
-f = h5py.File( "%s/%s_lset1_map.hdf5"%(outdir,  filepre), 'r' )
+f = h5py.File( "%s/%s_map1.hdf5"%(outdir,  filepre), 'r' )
 for i in range(N):
     print( "group: %i"%i )
     g = f[ '/Group%i'%i ]

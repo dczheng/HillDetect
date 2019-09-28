@@ -61,8 +61,11 @@ for gidx in range( NGroups ):
         y = c[0] + crpixy
         x = c[1] + crpixx
         axs[1].plot( [x], [y], 'b*', ms=2  )
-        axs[1].text( x, y, "%.2f"%(flux), fontsize=8 )
+        #axs[1].text( x, y, "%i [%.2f]"%(index, flux), fontsize=8 )
+        axs[1].text( x, y, "%i"%(index), fontsize=8 )
         index += 1
+for i in range(2):
+    axs[i].invert_yaxis()
 print( index )
 
 fig.savefig( 'final.png' )

@@ -23,7 +23,7 @@ fig1, axs1 = plt.subplots( m, n, figsize=(n*5, m*5) )
 fig2, axs2 = plt.subplots( m, n, figsize=(n*5, m*5) )
 
 fmap = h5py.File( "%s/%s_lset1_map.hdf5"%(outdir,  filepre), 'r' )
-fmap_after = h5py.File( "%s/%s_lset1_map_after.hdf5"%(outdir,  filepre), 'r' )
+fmap_after = h5py.File( "%s/%s_map1_after.hdf5"%(outdir,  filepre), 'r' )
 flines = h5py.File( "%s/%s_lset1_lines.hdf5"%(outdir,  filepre), 'r' )
 for i in range(N):
     ax1 = axs1[ i//n, i%n ]

@@ -33,7 +33,7 @@ LogNorm1        1
 SigmaClipping   1
 SigmaClipping1  1
 RSigma          0.3 
-RSigma1         0.1 
+RSigma1         0.05 
 FTClipping      0
 DataCutting     1
 CuttingXStart   0.475

@@ -32,7 +32,7 @@ for i in range(N):
     #print( NRegs )
     for j in range(NRegs):
         r = fregs[ '/Group%i/Reg-%i'%(i,j) ][()]
-        ax.plot( r[1,:], r[0,:], '*' )
+        ax.plot( r[1,:], r[0,:], 'k*' )
 
 
 fmap.close()
