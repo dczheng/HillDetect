@@ -6,10 +6,11 @@ MaxIters        10000
 Lambda1         1
 Lambda2         1
 TimeStep        0.1
+Lset1           0
 Mu1             1
 Nu1             0
 Tol1            1e-5
-MaxIters1       10000
+MaxIters1       1000
 Lambda11        1
 Lambda21        1
 TimeStep1       0.1

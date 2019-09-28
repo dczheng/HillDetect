@@ -7,51 +7,41 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mplc
 from matplotlib import cm
+import h5py
 import sys
 
-filepre = sys.argv[1] 
-outdir = "new_outputs"
-data_raw = np.loadtxt( "%s/%s_lset0_map.dat"%(outdir, filepre) )
-print( data_raw.shape )
+outdir = sys.argv[1]
+filepre = sys.argv[2] 
+N = int( sys.argv[3] )
 
 fig, axs = plt.subplots( 2,1, figsize=(5, 5*2) )
 
-lines    = open( './%s/%s_lset0_lines.dat'%(outdir, filepre) ).readlines()
-m = len( lines )
-print( m )
-if m % 2 != 0:
-    print( "error" )
-    exit()
+f = h5py.File( "%s/%s_lset0_map.hdf5"%(outdir,  filepre), 'r' )
+map0 = f[ '/map'][()]
+f.close()
 
-axs[0].imshow( data_raw, norm=mplc.LogNorm(), cmap=cm.jet )
-axs[0].set_title( 'lset lines' )
+f = h5py.File( "%s/%s_lset0_lines.hdf5"%(outdir,  filepre), 'r' )
+iters = f[ '/Lines' ].attrs[ 'iters' ]
+lines = f[ '/Lines/lines-%i'%iters ][()]
+print( iters )
+f.close()
 
-x = np.array([float(i) for i in lines[m-2].split()[4:]])
-y = np.array([float(i) for i in lines[m-1].split()[4:]])
-#print( len(x), x.min(), x.max(), y.min(), y.max() )
-axs[0].plot( x, y, 'b.', ms=0.5 )
+axs[0].imshow( map0, norm=mplc.LogNorm(), cmap=cm.jet )
+axs[0].plot( lines[0,:], lines[1,:], 'b.', ms=0.5  )
 
-lines    = open( './%s/%s_lset0_edges.dat'%(outdir, filepre) ).readlines()
-m = len( lines )
-print( m )
-if m % 2 != 0:
-    print( "error" )
-    exit()
+img = np.zeros( map0.shape )
+f = h5py.File( "%s/%s_lset1_map.hdf5"%(outdir,  filepre), 'r' )
+for i in range(N):
+    print( "group: %i"%i )
+    g = f[ '/Group%i'%i ]
+    m0, n0 = g.attrs[ 'REPIXS' ]
+    print( 'REPIXS: %i %i'%(m0, n0) )
+    map1 = g[ 'map' ]
+    m, n = map1.shape
+    img[ m0:m0+m, n0:n0+n ] = map1
+f.close()
 
-axs[1].imshow( data_raw, norm=mplc.LogNorm(), cmap=cm.jet )
-axs[1].set_title( 'fof edges' )
 
-i = 0
-index = 0
-while( index<25 ):
-#while( i<m ):
-    x = np.array([float(i) for i in lines[i].split()[1:]])
-    y = np.array([float(i) for i in lines[i+1].split()[1:]])
-    #print( len(x), x.min(), x.max(), y.min(), y.max() )
-    axs[1].plot( x, y, 'b.', ms=0.5 )
-    if 0 not in x and 0 not in y:
-        index += 1
-    i += 2
+axs[1].imshow( img, norm=mplc.LogNorm(), cmap=cm.jet )
 
 fig.savefig( 'lset0.png' )
-

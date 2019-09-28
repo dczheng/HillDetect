@@ -34,7 +34,7 @@ typedef struct GlobalParams {
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
-         DataCutting, ParalleLevel;
+         DataCutting, ParalleLevel, Lset1;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
     RSigma, RSigma1,
@@ -58,11 +58,11 @@ extern int
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;
 extern GlobalParams All;
-extern FILE *LogFileFd, *LsetErrFd,
-            *RegsFd, *EdgesFd;
+extern FILE *LogFileFd, *LsetErrFd;
 //extern_end
 
-hid_t   h5_Regs, h5_Lines, h5_LinesGroup, h5_Edges, h5_Lset0Map, h5_Lset1Map;
+hid_t   h5_Regs, h5_RegsGroup, h5_Lines, h5_LinesGroup, h5_Edges, h5_EdgesGroup, h5_Lset0Map,
+        h5_Lset1Map, h5_Lset1Map_after;
 
 extern int *Next, *Head, *Len, *Tail;
 

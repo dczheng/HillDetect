@@ -53,7 +53,7 @@ void run0() {
 void run_first_finder() {
 
     char buf[100];
-    hid_t h5_dataset, h5_dataspace;
+    hid_t h5_ds, h5_dsp;
     int h5_ndims;
     hsize_t h5_dims[2];
 
@@ -69,17 +69,20 @@ void run_first_finder() {
         h5_ndims = 2;
         h5_dims[0] = HeightGlobal;
         h5_dims[1] = WidthGlobal;
-        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_dataset = H5Dcreate( h5_Lset0Map, "map", H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
-        H5Dwrite( h5_dataset, H5T_NATIVE_DOUBLE, h5_dataspace, H5S_ALL, H5P_DEFAULT, DataRaw );
-        H5Dclose( h5_dataset );
-        H5Sclose( h5_dataspace );
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_ds = H5Dcreate( h5_Lset0Map, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, DataRaw );
+        H5Dclose( h5_ds );
+        H5Sclose( h5_dsp );
         H5Fclose( h5_Lset0Map );
     }
 
     if ( ThisTask == 0 ) {
         LsetErrFd = myfopen( "w", "%s/%s_lset0_err.dat", All.OutputDir, InputBaseName );
-        EdgesFd = myfopen( "w","%s/%s_lset0_edges.dat", All.OutputDir, InputBaseName );
+
+        sprintf( buf, "%s/%s_lset0_edges.hdf5", All.OutputDir, InputBaseName );
+        h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        h5_EdgesGroup = H5Gcreate( h5_Edges, "edge", 0 );
 
         sprintf( buf, "%s/%s_lset0_lines.hdf5", All.OutputDir, InputBaseName );
         h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
@@ -101,31 +104,251 @@ void run_first_finder() {
     memcpy( next_lset0, Next, sizeof(int) * Npixs );
     memcpy( head_lset0, Head, sizeof(int) * Npixs );
     memcpy( len_lset0,  Len, sizeof(int) * Npixs );
+
+    gn = 0;
+    while( len_lset0[gn]>20 )
+        gn++;
+
     find_region_free();
 
     do_sync;
 
     if ( ThisTask == 0 ) {
         fclose( LsetErrFd );
-        fclose( EdgesFd );
         H5Gclose( h5_LinesGroup );
         H5Fclose( h5_Lines );
+        H5Gclose( h5_EdgesGroup );
+        H5Fclose( h5_Edges );
 
     }
     mytimer_end();
 
 }
 
+void merge_map() {
+
+    int k, task, h5_ndims;
+    hsize_t h5_dims[2], h5_maxdims[2];
+    char buf[100];
+    double *data_buf;
+    hid_t h5_ds, h5_dsp, h5_g1, h5_g2, h5_attr, h5_map_f1, h5_map_f2,
+        h5_map_after_f1, h5_map_after_f2;
+    if ( ThisTask )
+        return;
+
+    sprintf( buf, "%s/%s_map1.hdf5", All.OutputDir, InputBaseName );
+    h5_map_f1 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    sprintf( buf, "%s/%s_map1_after.hdf5", All.OutputDir, InputBaseName );
+    h5_map_after_f1 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    data_buf = malloc( sizeof(double) * NpixsGlobal );
+    for ( task=0; task<NTask; task++ ) {
+
+        sprintf( buf, "%s/%s_map1_%03i.hdf5", All.OutputDir, InputBaseName, task );
+        h5_map_f2 = H5Fopen( buf, H5F_ACC_RDWR, H5P_DEFAULT );
+
+        sprintf( buf, "%s/%s_map1_%03i_after.hdf5", All.OutputDir, InputBaseName, task );
+        h5_map_after_f2 = H5Fopen( buf, H5F_ACC_RDWR, H5P_DEFAULT );
+
+        for ( k=0; k<gn; k++ ) {
+            if ( k % NTask != task )
+                continue;
+
+        /************************map**********************/
+            sprintf( buf, "Group%i", k );
+            h5_g1 = H5Gcreate( h5_map_f1,  buf, 0 );
+            h5_g2 = H5Gopen( h5_map_f2,  buf );
+
+            h5_attr = H5Aopen_name( h5_g2, "REPIXS" );
+            H5Aread( h5_attr, H5T_NATIVE_INT, data_buf );
+            H5Aclose( h5_attr );
+
+            h5_ndims = 1;
+            h5_dims[0] = 2;
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_attr = H5Acreate( h5_g1, "REPIXS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+            H5Awrite( h5_attr, H5T_NATIVE_INT, data_buf );
+            H5Aclose( h5_attr );
+            H5Sclose( h5_dsp );
+
+            h5_ds = H5Dopen( h5_g2, "map" );
+            H5Dread( h5_ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_buf );
+            h5_dsp = H5Dget_space( h5_ds );
+            H5Dclose( h5_ds );
+            H5Sget_simple_extent_dims( h5_dsp, h5_dims, h5_maxdims );
+            h5_ndims = H5Sget_simple_extent_ndims( h5_dsp );
+            H5Sclose( h5_dsp );
+
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_ds = H5Dcreate( h5_g1, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+            H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, data_buf );
+            H5Dclose( h5_ds );
+            H5Sclose( h5_dsp );
+
+            H5Gclose( h5_g1 );
+            H5Gclose( h5_g2 );
+
+        /************************map-after**********************/
+            sprintf( buf, "Group%i", k );
+            h5_g1 = H5Gcreate( h5_map_after_f1,  buf, 0 );
+            h5_g2 = H5Gopen( h5_map_after_f2,  buf );
+
+            h5_attr = H5Aopen_name( h5_g2, "REPIXS" );
+            H5Aread( h5_attr, H5T_NATIVE_INT, data_buf );
+            H5Aclose( h5_attr );
+
+            h5_ndims = 1;
+            h5_dims[0] = 2;
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_attr = H5Acreate( h5_g1, "REPIXS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+            H5Awrite( h5_attr, H5T_NATIVE_INT, data_buf );
+            H5Aclose( h5_attr );
+            H5Sclose( h5_dsp );
+
+            h5_ds = H5Dopen( h5_g2, "map" );
+            H5Dread( h5_ds, H5T_NATIVE_DOUBLE, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_buf );
+            h5_dsp = H5Dget_space( h5_ds );
+            H5Dclose( h5_ds );
+            H5Sget_simple_extent_dims( h5_dsp, h5_dims, h5_maxdims );
+            h5_ndims = H5Sget_simple_extent_ndims( h5_dsp );
+            H5Sclose( h5_dsp );
+
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_ds = H5Dcreate( h5_g1, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+            H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, data_buf );
+            H5Dclose( h5_ds );
+            H5Sclose( h5_dsp );
+
+            H5Gclose( h5_g1 );
+            H5Gclose( h5_g2 );
+
+
+
+        /***************************************************/
+
+        }
+
+        H5Fclose( h5_map_f2 );
+        H5Fclose( h5_map_after_f2 );
+        sprintf( buf, "%s/%s_map1_%03i.hdf5", All.OutputDir, InputBaseName, task );
+        remove( buf );
+        sprintf( buf, "%s/%s_map1_%03i_after.hdf5", All.OutputDir, InputBaseName, task );
+        remove( buf );
+
+    }
+    H5Fclose( h5_map_f1 );
+    H5Fclose( h5_map_after_f1 );
+    free( data_buf );
+
+}
+
+void merge_lset1() {
+
+    int k, task, h5_ndims, i, iters;
+    hsize_t h5_dims[2], h5_maxdims[2];
+    char buf[100];
+    double *data_buf;
+    hid_t h5_ds, h5_dsp, h5_g1, h5_g2, h5_attr,
+        h5_lines_f1, h5_lines_f2;
+    if ( ThisTask )
+        return;
+
+    sprintf( buf, "%s/%s_lset1_lines.hdf5", All.OutputDir, InputBaseName );
+    h5_lines_f1 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    data_buf = malloc( sizeof(double) * NpixsGlobal );
+    for ( task=0; task<NTask; task++ ) {
+
+        sprintf( buf, "%s/%s_lset1_lines_%03i.hdf5", All.OutputDir, InputBaseName, task );
+        h5_lines_f2 = H5Fopen( buf, H5F_ACC_RDWR, H5P_DEFAULT );
+
+        for ( k=0; k<gn; k++ ) {
+            if ( k % NTask != task )
+                continue;
+
+        /************************lines**********************/
+            sprintf( buf, "Group%i", k );
+            h5_g1 = H5Gcreate( h5_lines_f1,  buf, 0 );
+            h5_g2 = H5Gopen( h5_lines_f2,  buf );
+
+            h5_attr = H5Aopen_name( h5_g2, "iters" );
+            H5Aread( h5_attr, H5T_NATIVE_INT, &iters );
+            H5Aclose( h5_attr );
+
+            if ( iters > 0 ) {
+
+                h5_dsp = H5Screate( H5S_SCALAR );
+                h5_attr = H5Acreate( h5_g1, "iters", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+                H5Awrite( h5_attr, H5T_NATIVE_INT, &iters );
+                H5Aclose( h5_attr );
+                H5Sclose( h5_dsp );
+
+            }
+
+            for ( i=1; i<=iters; i++ ) {
+
+                sprintf( buf, "S1S2-%i", i );
+
+                h5_ndims = 1;
+                h5_dims[0] = 2;
+                h5_attr = H5Aopen_name( h5_g2, buf );
+                H5Aread( h5_attr, H5T_NATIVE_DOUBLE, data_buf );
+                H5Aclose( h5_attr );
+
+                h5_ndims = 1;
+                h5_dims[0] = 2;
+                h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
+                h5_attr = H5Acreate( h5_g1, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+                H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, data_buf );
+                H5Aclose( h5_attr );
+                H5Sclose( h5_dsp );
+
+                sprintf( buf, "lines-%i", i );
+
+                h5_ds = H5Dopen( h5_g2, buf );
+                H5Dread( h5_ds, H5T_NATIVE_INT, H5S_ALL, H5S_ALL, H5P_DEFAULT, data_buf );
+                h5_dsp = H5Dget_space( h5_ds );
+                H5Dclose( h5_ds );
+                H5Sget_simple_extent_dims( h5_dsp, h5_dims, h5_maxdims );
+                h5_ndims = H5Sget_simple_extent_ndims( h5_dsp );
+                H5Sclose( h5_dsp );
+
+                h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+                h5_ds = H5Dcreate( h5_g1, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+                H5Dwrite( h5_ds, H5T_NATIVE_INT, h5_dsp, H5S_ALL, H5P_DEFAULT, data_buf );
+                H5Dclose( h5_ds );
+                H5Sclose( h5_dsp );
+
+            }
+
+            H5Gclose( h5_g1 );
+            H5Gclose( h5_g2 );
+        /***************************************************/
+
+        }
+
+        H5Fclose( h5_lines_f2 );
+        sprintf( buf, "%s/%s_lset1_lines_%03i.hdf5", All.OutputDir, InputBaseName, task );
+        remove( buf );
+
+    }
+    H5Fclose( h5_lines_f1 );
+    free( data_buf );
+
+}
+
 void run_second_finder() {
 
     char buf[100];
-    hid_t h5_dataset, h5_dataspace, h5_group, h5_attr;
+    hid_t h5_ds, h5_dsp, h5_group, h5_attr;
     int h5_ndims;
     hsize_t h5_dims[2];
 
     int i, p, j, k, Xs[2],
          xmin, xmax, ymin, ymax, x, y, w, h, flag, index;
     put_header( "run second finder", 0 );
+    do_sync;
 
 //#define FIXEDSIZE
 #ifdef FIXEDSIZE
@@ -165,19 +388,84 @@ void run_second_finder() {
     gn = index;
     writelog( "gn: %i\n", gn );
 
-    LsetErrFd = myfopen( "w", "%s/%s_lset1_err_%03i.dat",
-                All.OutputDir, InputBaseName, ThisTask );
-    EdgesFd = myfopen( "w","%s/%s_lset1_edges_%03i.dat",
-                All.OutputDir, InputBaseName, ThisTask );
-    RegsFd = myfopen( "w","%s/%s_lset1_regs_%03i.dat",
-                All.OutputDir, InputBaseName, ThisTask );
+    if ( NTask != 1 ) {
 
-    sprintf( buf,"%s/%s_lset1_lines_%03i.hdf5",
-                All.OutputDir, InputBaseName, ThisTask );
-    h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
 
-    sprintf( buf, "%s/%s_lset1_%03i.hdf5", All.OutputDir, InputBaseName, ThisTask );
-    h5_Lset1Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        sprintf( buf, "%s/%s_map1_%03i.hdf5", All.OutputDir, InputBaseName, ThisTask );
+        h5_Lset1Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+        sprintf( buf, "%s/%s_map1_%03i_after.hdf5", All.OutputDir, InputBaseName, ThisTask );
+        h5_Lset1Map_after = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+        if ( All.Lset1  ) {
+            LsetErrFd = myfopen( "w", "%s/%s_lset1_err_%03i.dat",
+                All.OutputDir, InputBaseName, ThisTask );
+            sprintf( buf,"%s/%s_lset1_lines_%03i.hdf5",
+                All.OutputDir, InputBaseName, ThisTask );
+            h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+            sprintf( buf,"%s/%s_lset1_edge_%03i.hdf5",
+                All.OutputDir, InputBaseName, ThisTask );
+            h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        }
+        else {
+
+            sprintf( buf,"%s/%s_fof_regs_%03i.hdf5",
+                All.OutputDir, InputBaseName, ThisTask );
+            h5_Regs = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        }
+
+    }
+    else {
+
+        sprintf( buf, "%s/%s_map1.hdf5", All.OutputDir, InputBaseName );
+        h5_Lset1Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+        sprintf( buf, "%s/%s_map1_after.hdf5", All.OutputDir, InputBaseName );
+        h5_Lset1Map_after = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        
+        if ( All.Lset1 ) {
+            LsetErrFd = myfopen( "w", "%s/%s_lset1_err.dat",
+                All.OutputDir, InputBaseName );
+            sprintf( buf,"%s/%s_lset1_edge.hdf5",
+                All.OutputDir, InputBaseName );
+            h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+            sprintf( buf,"%s/%s_lset1_lines.hdf5",
+                All.OutputDir, InputBaseName );
+            h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        }
+        else {
+            sprintf( buf,"%s/%s_fof_regs.hdf5",
+                All.OutputDir, InputBaseName );
+            h5_Regs = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        }
+
+    }
+
+            h5_dsp = H5Screate( H5S_SCALAR );
+            h5_attr = H5Acreate( h5_Regs, "NGroups", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+            H5Awrite( h5_attr, H5T_NATIVE_INT, &gn );
+            H5Aclose( h5_attr );
+            H5Sclose( h5_dsp );
+
+            h5_ndims = 1;
+            h5_dims[0] = 2;
+            Xs[0] = HStartCut;
+            Xs[1] = WStartCut;
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_attr = H5Acreate( h5_Regs, "GCRPIX", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+            H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+            H5Aclose( h5_attr );
+            H5Sclose( h5_dsp );
+
+            Xs[0] = HEndCut-HStartCut;
+            Xs[1] = WEndCut-WStartCut;
+            h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+            h5_attr = H5Acreate( h5_Regs, "GNAXIS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+            H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+            H5Aclose( h5_attr );
+            H5Sclose( h5_dsp );
 
 #ifdef RUN_DEBUG
     for( k=0; k<NTask; k++ )
@@ -202,6 +490,7 @@ void run_second_finder() {
         }
 
 
+        if ( NTask > 1 )
         printf( "task: %03i, group %05i [%05i] "
                 "region: (%i, %i) - (%i, %i)\n",
                  ThisTask, k,
@@ -250,49 +539,95 @@ void run_second_finder() {
 #endif
             }
         }
-        Xs[0] = xmin;
-        Xs[1] = ymin;
 
-        fprintf( LsetErrFd,   "Group: %03i\n", k);
-        fprintf( EdgesFd,     "Group: %03i\n", k);
-        fprintf( RegsFd,      "Group: %03i\n", k);
+        Xs[0] = ymin;
+        Xs[1] = xmin;
 
         sprintf( buf, "Group%i", k );
         h5_group = H5Gcreate( h5_Lset1Map, buf, 0 );
 
-        sprintf( buf, "Group%i", k );
-        h5_LinesGroup = H5Gcreate( h5_Lines, buf, 0 );
-
         h5_ndims = 1;
         h5_dims[0] = 2;
-        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_attr = H5Acreate( h5_group, "REPIXS", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_attr = H5Acreate( h5_group, "REPIXS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
         H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
         H5Aclose( h5_attr );
-        H5Sclose( h5_dataspace );
+        H5Sclose( h5_dsp );
+
 
         h5_ndims = 2;
         h5_dims[0] = Height;
         h5_dims[1] = Width;
-        h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_dataset = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
-        H5Dwrite( h5_dataset, H5T_NATIVE_DOUBLE, h5_dataspace, H5S_ALL, H5P_DEFAULT, Data );
-        H5Dclose( h5_dataset );
-        H5Sclose( h5_dataspace );
-
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_ds = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, Data );
+        H5Dclose( h5_ds );
+        H5Sclose( h5_dsp );
+        H5Gclose( h5_group );
 
         pre_proc(1);
-        lset(1);
 
+        sprintf( buf, "Group%i", k );
+        h5_group = H5Gcreate( h5_Lset1Map_after, buf, 0 );
+
+        h5_ndims = 1;
+        h5_dims[0] = 2;
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_attr = H5Acreate( h5_group, "REPIXS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+        H5Aclose( h5_attr );
+        H5Sclose( h5_dsp );
+
+        h5_ndims = 2;
+        h5_dims[0] = Height;
+        h5_dims[1] = Width;
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_ds = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
+        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, Data );
+        H5Dclose( h5_ds );
+        H5Sclose( h5_dsp );
         H5Gclose( h5_group );
-        H5Gclose( h5_LinesGroup );
+
+        if ( All.Lset1 ) {
+            fprintf( LsetErrFd,   "Group: %03i\n", k);
+            sprintf( buf, "Group%i", k );
+            h5_LinesGroup = H5Gcreate( h5_Lines, buf, 0 );
+            sprintf( buf, "Group%i", k );
+            h5_EdgesGroup = H5Gcreate( h5_Edges, buf, 0 );
+            lset(1);
+            H5Gclose( h5_LinesGroup );
+            H5Gclose( h5_EdgesGroup );
+            fclose( LsetErrFd );
+        }
+        else {
+
+            sprintf( buf, "Group%i", k );
+            h5_RegsGroup = H5Gcreate( h5_Regs, buf, 0 );
+            find_region_fof();
+            H5Gclose( h5_RegsGroup );
+
+        }
 
     }
 
-    fclose( LsetErrFd );
-    fclose( EdgesFd );
-    fclose( RegsFd );
+
     H5Fclose( h5_Lset1Map );
+    H5Fclose( h5_Lset1Map_after );
+
+    if ( All.Lset1 ) {
+        H5Fclose( h5_Lines );
+        H5Fclose( h5_Edges );
+    }
+    else {
+        H5Fclose( h5_Regs );
+    }
+
+    do_sync;
+    if ( NTask > 1 ) {
+        merge_map();
+        if ( All.Lset1 )
+            merge_lset1();
+    }
     put_end();
 }
 
@@ -365,6 +700,9 @@ int main( int argc, char **argv ) {
 
     read_parameters( argv[1] );
     put_sep;
+
+    if ( All.Lset1 == 0 && NTask > 1 )
+        endrun( "paralle is not supported for Lset1=0!" );
 
     global_init();
     put_sep;
