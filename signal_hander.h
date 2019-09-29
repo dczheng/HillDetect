@@ -89,33 +89,6 @@ struct zsig_struct{
             RAISE_SIGSTOP(); \
 }
 
-#define DEBUG_CHECK_TEMP() {\
-    double fac_entr_to_temp, T;\
-    for( zsig.i=0; zsig.i<N_gas; zsig.i++ ) { \
-    fac_entr_to_temp = pow( SphP[zsig.i].d.Density  / (All.Time * All.Time * All.Time), GAMMA_MINUS1 ) / GAMMA_MINUS1 \
-    *  (4 / (8 - 5 * (1 - HYDROGEN_MASSFRAC))) * PROTONMASS / BOLTZMANN     * GAMMA_MINUS1 * All.UnitEnergy_in_cgs / All.UnitMass_in_g; \
-        T = SphP[zsig.i].Entropy * fac_entr_to_temp;\
-        if ( T > 1e7 ) {\
-            ZSPRINTF( 0, "T: %g, Entropy: %g, EntropyPred: %g, DtEntropy: %g\n",\
-            T, SphP[zsig.i].Entropy, SphP[zsig.i].EntropyPred, SphP[zsig.i].e.DtEntropy);\
-            RAISE_SIGSTOP();\
-        } \
-    }\
-}
-
-#define DEBUG_CHECK_TEMP_SINGLE( ii ) {\
-    double fac_entr_to_temp, T, ha, RhoBar;\
-    ha = hubble_function(All.Time);\
-    RhoBar = All.OmegaBaryon * 3 * ha * ha / ( 8*M_PI*All.G );\
-    fac_entr_to_temp = pow( SphP[ii].d.Density  / (All.Time * All.Time * All.Time), GAMMA_MINUS1 ) / GAMMA_MINUS1 \
-    *  (4 / (8 - 5 * (1 - HYDROGEN_MASSFRAC))) * PROTONMASS / BOLTZMANN     * GAMMA_MINUS1 * All.UnitEnergy_in_cgs / All.UnitMass_in_g; \
-        T = SphP[ii].Entropy * fac_entr_to_temp;\
-        if ( T > 1e7 ) {\
-            ZSPRINTF( 0, "T: %g, Entropy: %g, EntropyPred: %g, DtEntropy: %g, Dens: %g, ngb: %f\n", T, SphP[ii].Entropy, SphP[ii].EntropyPred, SphP[ii].e.DtEntropy, SphP[ii].d.Density/RhoBar, SphP[ii].n.NumNgb);\
-            printf( "T: %g, Entropy: %g, EntropyPred: %g, DtEntropy: %g, Dens: %g, ngb: %f\n", T, SphP[ii].Entropy, SphP[ii].EntropyPred, SphP[ii].e.DtEntropy, SphP[ii].d.Density/RhoBar, SphP[ii].n.NumNgb);\
-        } \
-}
-
 #define ZCLEAR()   { empty_buf_zsig();  }
 #define ZPUSH( a ) { stack_push_zsig( (double)a ); }
 #define ZPOP()     { stack_pop_zsig(); }
@@ -163,8 +136,6 @@ struct zsig_struct{
 #define CHECK_TREE( no, lim )
 #define CHECK_FATHER( no, a )
 #define CHECK_INF( A )
-#define DEBUG_CHECK_TEMP()
-#define DEBUG_CHECK_TEMP_SINGLE( ii )
 #define CHECK_NAN_INF( A )
 
 #endif
