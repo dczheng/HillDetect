@@ -36,11 +36,11 @@ void run0() {
             //fflush( stdout );
 
             read_fits( buf );
-            pre_proc(1);
+            pre_proc(0);
             //print_data( DataRaw, 230, 290, 580, 640, 0 );
             //return 0;
 
-            lset(1);
+            lset(0);
 
             free_fits();
         }

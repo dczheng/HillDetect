@@ -46,6 +46,7 @@ void get_s1_s2( double *s1, double *s2 ) {
 
 }
 
+/*
 void save_phi( int iter ) {
 
     FILE *fd;
@@ -63,6 +64,7 @@ void save_phi( int iter ) {
 
     fclose( fd );
 }
+*/
 
 void lset_find_line() {
     int i,j;
@@ -285,18 +287,12 @@ void lset( int mode ) {
             fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
                           Iter, PhiDiffNorm, c1, c2 );
             save_line( Iter );
-            if ( All.IsSavePhi )
-                save_phi(Iter);
         }
 
-        if ( mode == 0 ) {
-            if ( ThisTask == 0 ) {
-                fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
-                          Iter, PhiDiffNorm, c1, c2 );
-                save_line( Iter );
-                if ( All.IsSavePhi )
-                    save_phi(Iter);
-            }
+        if ( mode == 0 && ThisTask == 0 ) {
+            fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+                      Iter, PhiDiffNorm, c1, c2 );
+            save_line( Iter );
         }
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
@@ -304,7 +300,8 @@ void lset( int mode ) {
 
     }
 
-    lset_group_finder( Iter, mode );
+    if ( mode == 0 && ThisTask == 0 )
+        lset_group_finder( mode );
 
     free( edgex );
     free( edgey );

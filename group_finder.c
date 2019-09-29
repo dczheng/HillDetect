@@ -150,10 +150,6 @@ void group_finder() {
                 c[0] += yi;
                 c[1] += xi;
             }
-            /*
-            if ( ThisTask == 0 )
-                printf( "%i [%i %i]\n", p, xi, yi );
-            */
             flux[index] = f;
             index ++;
             p = Next[p];
@@ -221,30 +217,25 @@ void group_finder_free() {
     free(fof_map);
 }
 
-void lset_edge_region_save( int iter, int mode, int flag ) {
+void lset_edge_region_save( int flag ) {
 
     char buf[100];
     int i, p, index, xi, yi, *data, h5_ndims;
     hsize_t h5_dims[2];
     hid_t h5_dsp, h5_ds, h5_attr;
 
-    if ( mode == 0 )
-        if ( ThisTask )
-            return;
-
     data = malloc( sizeof(data) * Npixs * 2 );
 
-
-        h5_dsp = H5Screate( H5S_SCALAR );
-        if ( flag == 0 ) {
-            h5_attr = H5Acreate( h5_EdgesGroup, "NEdges", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-        }
-        else {
-            h5_attr = H5Acreate( h5_RegsGroup, "NRegs", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-        }
-        H5Awrite( h5_attr, H5T_NATIVE_INT, &Nfof  );
-        H5Aclose( h5_attr  );
-        H5Sclose( h5_dsp  );
+    h5_dsp = H5Screate( H5S_SCALAR );
+    if ( flag == 0 ) {
+        h5_attr = H5Acreate( h5_EdgesGroup, "NEdges", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+    }
+    else {
+        h5_attr = H5Acreate( h5_RegsGroup, "NRegs", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+    }
+    H5Awrite( h5_attr, H5T_NATIVE_INT, &Nfof  );
+    H5Aclose( h5_attr  );
+    H5Sclose( h5_dsp  );
 
     for( i=0; i<Nfof; i++ ) {
         p = Head[i];
@@ -283,7 +274,8 @@ void lset_edge_region_save( int iter, int mode, int flag ) {
 
 }
 
-void ds9_region_save( int iter ) {
+/*
+void ds9_region_save() {
 
     char buf[100];
     FILE *fd;
@@ -294,9 +286,6 @@ void ds9_region_save( int iter ) {
         "global color=green dashlist=8 3 width=1 font=\"helvetica 10 normal roman\" " \
         "select=1 highlite=1 dash=0 fixed=0 edit=1 move=1 delete=1 include=1 source=1 \n" \
         "image\n\n";
-
-    if ( ThisTask == 0 )
-        printf( "save ds9 region ...\n" );
 
     sprintf( buf, "%s/%s_ds9_region_%04i.reg", All.OutputDir, FileName, iter );
     fd = fopen( buf, "w" );
@@ -319,30 +308,18 @@ void ds9_region_save( int iter ) {
         
     fclose(fd);
 }
+*/
 
-void lset_group_finder( int iter, int mode ) {
-
-    if ( mode == 0 ) {
-        writelog( "find region ...\n" );
-    }
-    else{
-        fprintf( LogFileFd, "find region ...\n" );
-    }
+void lset_group_finder( int mode ) {
 
     fof_reset();
     lset_find_edge();
-    lset_edge_region_save( iter, mode, 0 );
+    lset_edge_region_save( 0 );
 
-    if ( mode == 0 && All.Lset1 )
-        return;
-
-    //fof_ds9_region_save( iter );
+    //fof_ds9_region_save();
 
     fof_reset();
     lset_find_region();
-    lset_edge_region_save( iter, mode, 1 );
-
-    fprintf( LogFileFd, "[fof], edge: %i, region: %i\n", Nfof, Nfof );
-    put_end();
+    lset_edge_region_save( 1 );
 
 }
