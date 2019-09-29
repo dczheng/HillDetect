@@ -90,10 +90,10 @@ void fof_region() {
 void find_region_fof() {
 
     
-    int p, i, xi, yi, *data, index, h5_ndims, crpix[2], c[2];
+    int p, i, xi, yi, *data, index, h5_ndims, crpix[2], c[2], j;
     hsize_t h5_dims[2];
     hid_t h5_dsp, h5_ds, h5_attr;
-    double flux;
+    double flux_tot, *flux;
     char buf[100];
 
     find_region_init();
@@ -143,26 +143,29 @@ void find_region_fof() {
     H5Sclose( h5_dsp  );
 
     data = malloc( sizeof(int) * Npixs );
+    flux = malloc( sizeof(double) * Npixs );
     for( i=0; i<NfofRegion; i++ ) {
         p = Head[i];
         index = 0;
         c[0] = c[1] = 0;
-        flux = 0;
         while( p>=0 ) {
             xi = p % Width;
             yi = p / Width;
             data[index] = yi;
             data[index+Len[i]] = xi;
-            index ++;
             c[0] += yi;
             c[1] += xi;
             /*
             if ( ThisTask == 0 )
                 printf( "%i [%i %i]\n", p, xi, yi );
             */
-            flux += DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ];
+            flux[index] = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ];
+            index ++;
             p = Next[p];
         }
+
+        for( j=0,flux_tot=0; j<index; j++ )
+            flux_tot += flux[j];
 
         c[0] /= (double)Len[i];
         c[1] /= (double)Len[i];
@@ -188,16 +191,26 @@ void find_region_fof() {
         H5Sclose( h5_dsp  );
 
         sprintf( buf, "Flux-%i", i );
+        h5_ndims = 1;
+        h5_dims[0] = Len[i];
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
+        h5_ds = H5Dcreate( h5_RegsGroup, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT  );
+        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, flux );
+        H5Dclose( h5_ds );
+        H5Sclose( h5_dsp  );
+
+        sprintf( buf, "FluxTot-%i", i );
         h5_dsp = H5Screate( H5S_SCALAR );
         h5_attr = H5Acreate( h5_RegsGroup, buf, H5T_NATIVE_DOUBLE, h5_dsp,
             H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &flux );
+        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &flux_tot );
         H5Aclose( h5_attr );
         H5Sclose( h5_dsp  );
 
      }
 
     free( data );
+    free( flux );
     find_region_free();
 }
 

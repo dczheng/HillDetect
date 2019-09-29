@@ -42,9 +42,13 @@ print( NGroups )
 
 
 fout = open( 'catalog.txt', 'w' )
+fout_csv = open( 'catalog.csv', 'w' )
 fmt = "%6s %12s %12s %10s %5s %5s %10s %10s\n"
+fmt_csv = "%s,%s,%s,%s,%s,%s,%s,%s\n"
 fout.write( fmt%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
+fout_csv.write( fmt_csv%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
 fmt = "%6i %12s %12s %10f %4i %5i %10f %10f\n"
+fmt_csv = "%i,%s,%s,%f,%i,%i,%f,%f\n"
 
 index = 0
 ddd = []
@@ -61,7 +65,7 @@ for gidx in range( NGroups ):
         deci = c[0] + crpixy + Gcrpix[0]
         rai = c[1] + crpixx + Gcrpix[1]
 
-        r = mywcs.wcs_pix2world( [[rai+1, deci, 0, 0], [0, 0, 0, 0]], 0 )[0]
+        r = mywcs.wcs_pix2world( [[rai, deci, 0, 0], [0, 0, 0, 0]], 0 )[0]
         
         ra1 = r[0]
         dec1 = r[1]
@@ -114,7 +118,9 @@ for l in ddd:
     skymodel_write( f_skymdel, "group%i"%(l[0]), l[1], l[2], freq, l[3] )
 for l in ddd:
     fout.write( fmt%l )
+    fout_csv.write( fmt_csv%l )
 
 f_skymdel.close()
 fout.close()
+fout_csv.close()
 
