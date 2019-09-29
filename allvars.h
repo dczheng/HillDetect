@@ -34,7 +34,7 @@ typedef struct GlobalParams {
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
-         DataCutting, ParalleLevel, Lset1;
+         DataCutting, ParalleLevel, Lset1, PeakCenterFlag;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
     RSigma, RSigma1,
@@ -50,7 +50,7 @@ extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             ThisTask, NTask, FileNum,
-            NfofEdge, NfofRegion,
+            Nfof,
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
             HStartCut, HEndCut, WStartCut, WEndCut;
@@ -61,7 +61,7 @@ extern GlobalParams All;
 extern FILE *LogFileFd, *LsetErrFd;
 //extern_end
 
-hid_t   h5_Regs, h5_RegsGroup, h5_Lines, h5_LinesGroup, h5_Edges, h5_EdgesGroup, h5_Lset0Map,
+hid_t   h5_Regs, h5_EdgesRegs, h5_RegsGroup, h5_Lines, h5_LinesGroup, h5_EdgesGroup, h5_Lset0Map,
         h5_Lset1Map, h5_Lset1Map_after;
 
 extern int *Next, *Head, *Len, *Tail;

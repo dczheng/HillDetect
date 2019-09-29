@@ -227,7 +227,7 @@ void lset( int mode ) {
     edgey = malloc( sizeof(int) * Npixs );
 
     init_phi();
-    find_region_init();
+    group_finder_init();
 
     get_c1_c2( &c1, &c2 );
 
@@ -304,7 +304,7 @@ void lset( int mode ) {
 
     }
 
-    find_region( Iter, mode );
+    lset_group_finder( Iter, mode );
 
     free( edgex );
     free( edgey );

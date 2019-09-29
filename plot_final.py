@@ -1,4 +1,4 @@
-#!/home/hkli/anaconda3/bin/python3
+#!/usr/bin/env python3
 
 from matplotlib import use
 use( 'agg' )
@@ -20,7 +20,8 @@ bname = os.path.basename( fits_file )
 print( bname )
 
 fig, axs = plt.subplots( 2, 1, figsize=(5, 5*2) )
-fits_data = fits.open( fits_file )[0].data[0,0,:,:]
+#fits_data = fits.open( fits_file )[0].data[0,0,:,:]
+fits_data = fits.open( fits_file )[0].data
 
 
 f = h5py.File( "%s/%s_fof_regs.hdf5"%( outdir, bname ), 'r' )
@@ -30,11 +31,6 @@ Gnaxis = f.attrs[ 'GNAXIS' ]
 print( "GCRPIX: %i %i"%(Gcrpix[0], Gcrpix[1]) )
 print( "Gnaxis: %i %i"%(Gnaxis[0], Gnaxis[1]) )
 print( NGroups )
-
-
-fits_data[Gcrpix[0]+Gnaxis[0], Gcrpix[1]:Gcrpix[1]+Gnaxis[1]] = 0 
-fits_data[Gcrpix[0]:Gcrpix[0]+Gnaxis[0], Gcrpix[1]] = 0 
-fits_data[Gcrpix[0]:Gcrpix[0]+Gnaxis[0], Gcrpix[1]+Gnaxis[1]] = 0 
 
 axs[0].imshow( fits_data, norm=mplc.LogNorm(), cmap=cm.jet )
 
@@ -57,16 +53,16 @@ for gidx in range( NGroups ):
 
     for j in range( Nregs ):
         c = g.attrs[ 'Center-%i'%j ]
-        flux = g.attrs[ 'Flux-%i'%j ]
+        flux = g.attrs[ 'FluxTot-%i'%j ]
         y = c[0] + crpixy
         x = c[1] + crpixx
         axs[1].plot( [x], [y], 'b*', ms=2  )
         #axs[1].text( x, y, "%i [%.2f]"%(index, flux), fontsize=8 )
-        axs[1].text( x, y, "%i"%(index), fontsize=8 )
+        #axs[1].text( x, y, "%i"%(index), fontsize=8 )
         index += 1
+print( index )
 for i in range(2):
     axs[i].invert_yaxis()
-print( index )
 
 fig.savefig( 'final.png' )
 

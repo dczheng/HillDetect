@@ -20,7 +20,7 @@ TimeStep1       0.1
 ParalleLevel   1
 InputDir        ./test_fits
 FileNameList    ./filelist.txt
-FileName        ./test_fits/sub40Kv1.fits
+FileName        ./test_fits/new.fits
 
 %---------------------- output options
 IsSavePhi       0
@@ -36,7 +36,14 @@ RSigma          0.3
 RSigma1         0.1 
 FTClipping      0
 DataCutting     1
-CuttingXStart   0.475
+%CuttingXStart   0.475
+CuttingXStart   0.4
 CuttingXEnd     0.6
-CuttingYStart   0.6
+%CuttingYStart   0.6
+CuttingYStart   0.225 
 CuttingYEnd     0.725
+%CuttingXStart   0.225 
+%CuttingXEnd     0.725
+
+%---------------------- group finder options
+PeakCenterFlag       1

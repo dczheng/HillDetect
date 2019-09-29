@@ -64,6 +64,8 @@ void run_first_finder() {
     mytimer_start();
 
     if ( ThisTask == 0 ) {
+        LsetErrFd = myfopen( "w", "%s/%s_lset0_err.dat", All.OutputDir, InputBaseName );
+
         sprintf( buf, "%s/%s_lset0_map.hdf5", All.OutputDir, InputBaseName );
         h5_Lset0Map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
         h5_ndims = 2;
@@ -75,14 +77,12 @@ void run_first_finder() {
         H5Dclose( h5_ds );
         H5Sclose( h5_dsp );
         H5Fclose( h5_Lset0Map );
-    }
 
-    if ( ThisTask == 0 ) {
-        LsetErrFd = myfopen( "w", "%s/%s_lset0_err.dat", All.OutputDir, InputBaseName );
 
-        sprintf( buf, "%s/%s_lset0_edges.hdf5", All.OutputDir, InputBaseName );
-        h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-        h5_EdgesGroup = H5Gcreate( h5_Edges, "edge", 0 );
+        sprintf( buf, "%s/%s_lset0_edges_regs.hdf5", All.OutputDir, InputBaseName );
+        h5_EdgesRegs = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+        h5_EdgesGroup = H5Gcreate( h5_EdgesRegs, "Edges", 0 );
+        h5_RegsGroup =  H5Gcreate( h5_EdgesRegs, "Regs", 0 );
 
         sprintf( buf, "%s/%s_lset0_lines.hdf5", All.OutputDir, InputBaseName );
         h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
@@ -94,13 +94,13 @@ void run_first_finder() {
     YShift = 0;
     lset(0);
 
-    writelog( "NfofEdge: %i\n", NfofEdge );
+    writelog( "Nfof: %i\n", Nfof );
     next_lset0 = malloc( sizeof(int) * Npixs );
     head_lset0 = malloc( sizeof(int) * Npixs );
     len_lset0 = malloc( sizeof(int) * Npixs );
     put_sep;
 
-    gn = NfofEdge;
+    gn = Nfof;
     memcpy( next_lset0, Next, sizeof(int) * Npixs );
     memcpy( head_lset0, Head, sizeof(int) * Npixs );
     memcpy( len_lset0,  Len, sizeof(int) * Npixs );
@@ -109,7 +109,7 @@ void run_first_finder() {
     while( len_lset0[gn]>20 )
         gn++;
 
-    find_region_free();
+    group_finder_free();
 
     do_sync;
 
@@ -118,7 +118,7 @@ void run_first_finder() {
         H5Gclose( h5_LinesGroup );
         H5Fclose( h5_Lines );
         H5Gclose( h5_EdgesGroup );
-        H5Fclose( h5_Edges );
+        H5Fclose( h5_EdgesRegs );
 
     }
     mytimer_end();
@@ -388,6 +388,11 @@ void run_second_finder() {
     gn = index;
     writelog( "gn: %i\n", gn );
 
+//#define DISABLE_FIRST_FINDER
+#ifdef DISABLE_FIRST_FINDER
+    gn = 1;
+#endif
+
     if ( NTask != 1 ) {
 
 
@@ -406,7 +411,7 @@ void run_second_finder() {
 
             sprintf( buf,"%s/%s_lset1_edge_%03i.hdf5",
                 All.OutputDir, InputBaseName, ThisTask );
-            h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+            h5_EdgesRegs = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
         }
         else {
 
@@ -429,7 +434,7 @@ void run_second_finder() {
                 All.OutputDir, InputBaseName );
             sprintf( buf,"%s/%s_lset1_edge.hdf5",
                 All.OutputDir, InputBaseName );
-            h5_Edges = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+            h5_EdgesRegs = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
 
             sprintf( buf,"%s/%s_lset1_lines.hdf5",
                 All.OutputDir, InputBaseName );
@@ -489,13 +494,19 @@ void run_second_finder() {
             p = next_lset0[p];
         }
 
-
         if ( NTask > 1 )
         printf( "task: %03i, group %05i [%05i] "
                 "region: (%i, %i) - (%i, %i)\n",
                  ThisTask, k,
                  len_lset0[k], xmin, ymin, xmax, ymax );
         
+#ifdef DISABLE_FIRST_FINDER
+        ymax = HeightGlobal;
+        ymin = 0;
+        xmax = WidthGlobal;
+        xmin = 0;
+#endif
+
         h = ymax - ymin;
         w = xmax - xmin;
 #ifdef ADD_PAD
@@ -593,7 +604,7 @@ void run_second_finder() {
             sprintf( buf, "Group%i", k );
             h5_LinesGroup = H5Gcreate( h5_Lines, buf, 0 );
             sprintf( buf, "Group%i", k );
-            h5_EdgesGroup = H5Gcreate( h5_Edges, buf, 0 );
+            h5_EdgesGroup = H5Gcreate( h5_EdgesRegs, buf, 0 );
             lset(1);
             H5Gclose( h5_LinesGroup );
             H5Gclose( h5_EdgesGroup );
@@ -603,7 +614,7 @@ void run_second_finder() {
 
             sprintf( buf, "Group%i", k );
             h5_RegsGroup = H5Gcreate( h5_Regs, buf, 0 );
-            find_region_fof();
+            group_finder();
             H5Gclose( h5_RegsGroup );
 
         }
@@ -616,7 +627,7 @@ void run_second_finder() {
 
     if ( All.Lset1 ) {
         H5Fclose( h5_Lines );
-        H5Fclose( h5_Edges );
+        H5Fclose( h5_EdgesRegs );
     }
     else {
         H5Fclose( h5_Regs );

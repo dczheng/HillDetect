@@ -7,7 +7,7 @@
 
 int *fof_map;
 
-void fof_edge() {
+void lset_find_edge() {
 
     int i;
 
@@ -26,11 +26,11 @@ void fof_edge() {
         if ( Len[i] == 1 )
             break;
     }
-    NfofEdge = i;
+    Nfof = i;
 
 }
 
-void fof_region() {
+void lset_find_region() {
 
     int p;
     int np;
@@ -55,48 +55,22 @@ void fof_region() {
             }
         }
     }
-
-/*
-    int i, j;
-    FILE *fd;
-    fd = fopen( "fof_map.dat", "w" );
-    for( i=0; i<Height; i++ ) {
-        for( j=0; j<Width; j++ )
-            fprintf( fd, "%i ", fof_map[i*Width+j] );
-        fprintf( fd, "\n" );
-    }
-    fclose( fd );
-
-    fd = fopen( "phi_map.dat", "w" );
-    for( i=0; i<Height; i++ ) {
-        for( j=0; j<Width; j++ )
-            fprintf( fd, "%g ", Phi[i*Width+j] );
-        fprintf( fd, "\n" );
-    }
-    fclose( fd );
-*/
-
-
-    //printf( "NPixs: %i, np; %i, nm: %i\n", Npixs, np, Npixs - np );
-
     fof();
-
     for( p=0; p<Npixs; p++ )
         if ( Len[p] == 1 )
             break;
-    NfofRegion = p;
+    Nfof = p;
 }
 
-void find_region_fof() {
+void group_finder() {
 
-    
     int p, i, xi, yi, *data, index, h5_ndims, crpix[2], c[2], j;
     hsize_t h5_dims[2];
     hid_t h5_dsp, h5_ds, h5_attr;
-    double flux_tot, *flux;
+    double flux_tot, *flux, f, fmax;
     char buf[100];
 
-    find_region_init();
+    group_finder_init();
 
     for( p=0; p<Npixs; p++ ) {
         fof_map[p] = 0;
@@ -114,8 +88,8 @@ void find_region_fof() {
         if ( Len[p] == 1 )
             break;
     }
-    NfofRegion = p;
-    //printf( "Nfof: %i\n", NfofRegion );
+    Nfof = p;
+    //printf( "Nfof: %i\n", Nfof );
     /*
     for( p=0; p<Npixs; p++ ) {
         printf( "%i ", Next[p] );
@@ -126,7 +100,7 @@ void find_region_fof() {
     h5_dsp = H5Screate( H5S_SCALAR );
     h5_attr = H5Acreate( h5_RegsGroup, "NRegs", H5T_NATIVE_INT, h5_dsp,
         H5P_DEFAULT);
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &NfofRegion );
+    H5Awrite( h5_attr, H5T_NATIVE_INT, &Nfof );
     H5Aclose( h5_attr );
     H5Sclose( h5_dsp  );
 
@@ -142,33 +116,56 @@ void find_region_fof() {
     H5Aclose( h5_attr );
     H5Sclose( h5_dsp  );
 
-    data = malloc( sizeof(int) * Npixs );
+    data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
-    for( i=0; i<NfofRegion; i++ ) {
+    for( i=0; i<Nfof; i++ ) {
         p = Head[i];
         index = 0;
-        c[0] = c[1] = 0;
+        if ( All.PeakCenterFlag ) {
+            fmax = -1e10;
+        }
+        else {
+            c[0] = c[1] = 0;
+        }
         while( p>=0 ) {
             xi = p % Width;
             yi = p / Width;
             data[index] = yi;
             data[index+Len[i]] = xi;
-            c[0] += yi;
-            c[1] += xi;
+            if  ( index >= Npixs  * 2 || index+Len[i] >= Npixs * 2  ) {
+                printf( "%i %i %i [%i %i]\n", index, Len[i], Npixs, Width, Height );
+                endrun("can't be!");
+            }
+                
+            f = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ];
+
+            if ( All.PeakCenterFlag ) {
+                if ( f>fmax ) {
+                    fmax = f;
+                    c[0] = yi;
+                    c[1] = xi;
+                }
+            }
+            else {
+                c[0] += yi;
+                c[1] += xi;
+            }
             /*
             if ( ThisTask == 0 )
                 printf( "%i [%i %i]\n", p, xi, yi );
             */
-            flux[index] = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ];
+            flux[index] = f;
             index ++;
             p = Next[p];
         }
 
-        for( j=0,flux_tot=0; j<index; j++ )
+        for( j=0,flux_tot=0; j<Len[i]; j++ )
             flux_tot += flux[j];
 
-        c[0] /= (double)Len[i];
-        c[1] /= (double)Len[i];
+        if ( !All.PeakCenterFlag ) {
+            c[0] /= (double)Len[i];
+            c[1] /= (double)Len[i];
+        }
 
         sprintf( buf, "Center-%i", i );
         h5_ndims = 1;
@@ -211,36 +208,47 @@ void find_region_fof() {
 
     free( data );
     free( flux );
-    find_region_free();
+    group_finder_free();
 }
 
-void find_region_init() {
+void group_finder_init() {
     fof_map = malloc( sizeof(int) * Npixs );
     fof_init( fof_map, Width, Height );
 }
 
-void find_region_free() {
+void group_finder_free() {
     fof_free();
     free(fof_map);
 }
 
-void fof_edge_save( int iter, int mode ) {
+void lset_edge_region_save( int iter, int mode, int flag ) {
 
     char buf[100];
     int i, p, index, xi, yi, *data, h5_ndims;
     hsize_t h5_dims[2];
-    hid_t h5_dsp, h5_ds;
+    hid_t h5_dsp, h5_ds, h5_attr;
 
     if ( mode == 0 )
         if ( ThisTask )
             return;
 
-    data = malloc( sizeof(data) * Npixs );
+    data = malloc( sizeof(data) * Npixs * 2 );
 
-    index = 0;
 
-    for( i=0; i<NfofEdge; i++ ) {
+        h5_dsp = H5Screate( H5S_SCALAR );
+        if ( flag == 0 ) {
+            h5_attr = H5Acreate( h5_EdgesGroup, "NEdges", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+        }
+        else {
+            h5_attr = H5Acreate( h5_RegsGroup, "NRegs", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+        }
+        H5Awrite( h5_attr, H5T_NATIVE_INT, &Nfof  );
+        H5Aclose( h5_attr  );
+        H5Sclose( h5_dsp  );
+
+    for( i=0; i<Nfof; i++ ) {
         p = Head[i];
+        index = 0;
         while( p>=0 ) {
             xi = p % Width;
             yi = p / Width;
@@ -249,13 +257,22 @@ void fof_edge_save( int iter, int mode ) {
             index ++;
             p = Next[p];
         }
-        sprintf( buf, "edge-%i", i );
+
 
         h5_ndims = 2;
         h5_dims[0] = 2;
         h5_dims[1] = Len[i];
         h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL   );
-        h5_ds = H5Dcreate( h5_EdgesGroup, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+
+        if ( flag == 0 ) {
+            sprintf( buf, "edge-%i", i );
+            h5_ds = H5Dcreate( h5_EdgesGroup, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+        }
+        else {
+            sprintf( buf, "reg-%i", i );
+            h5_ds = H5Dcreate( h5_RegsGroup, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
+        }
+
         H5Dwrite( h5_ds, H5T_NATIVE_INT, h5_dsp, H5S_ALL, H5P_DEFAULT, data );
         H5Dclose( h5_ds );
         H5Sclose( h5_dsp  );
@@ -266,40 +283,7 @@ void fof_edge_save( int iter, int mode ) {
 
 }
 
-void fof_region_save( int iter ) {
-
-/*
-    int i, p;
-    int xi, yi;
-    
-    for( i=0; i<NfofRegion; i++ ) {
-        p = Head[i];
-        fprintf( RegsFd, "%4i ", Len[i] );
-        while( p>=0 ) {
-            xi = p % Width;
-            fprintf( RegsFd, "%4i ",  xi + XShift );
-            p = Next[p];
-        }
-        fprintf( RegsFd, "\n" );
-
-        p = Head[i];
-        fprintf( RegsFd, "%4i ", Len[i] );
-        while( p>=0 ) {
-            yi = p / Width;
-            fprintf( RegsFd, "%4i ",   yi + YShift );
-            p = Next[p];
-        }
-        fprintf( RegsFd, "\n" );
-     }
-*/
-
-}
-
-void fof_catalog_save( int iter ) {
-
-}
-
-void fof_ds9_region_save( int iter ) {
+void ds9_region_save( int iter ) {
 
     char buf[100];
     FILE *fd;
@@ -318,7 +302,7 @@ void fof_ds9_region_save( int iter ) {
     fd = fopen( buf, "w" );
     fprintf( fd, "%s", h_ds9 );
 
-    for( i=0; i<NfofEdge; i++ ) {
+    for( i=0; i<Nfof; i++ ) {
         fprintf( fd, "polygon(" );
         p = Head[i];
         for( l=0; l<Len[i]; l++ ) {
@@ -336,7 +320,7 @@ void fof_ds9_region_save( int iter ) {
     fclose(fd);
 }
 
-void find_region( int iter, int mode ) {
+void lset_group_finder( int iter, int mode ) {
 
     if ( mode == 0 ) {
         writelog( "find region ...\n" );
@@ -346,20 +330,19 @@ void find_region( int iter, int mode ) {
     }
 
     fof_reset();
-    fof_edge();
-    fof_edge_save( iter, mode );
+    lset_find_edge();
+    lset_edge_region_save( iter, mode, 0 );
 
-    if ( mode == 0 )
+    if ( mode == 0 && All.Lset1 )
         return;
 
     //fof_ds9_region_save( iter );
 
     fof_reset();
-    fof_region();
-    fof_region_save( iter );
-    fof_catalog_save( iter );
+    lset_find_region();
+    lset_edge_region_save( iter, mode, 1 );
 
-    fprintf( LogFileFd, "[fof], edge: %i, region: %i\n", NfofEdge, NfofRegion );
+    fprintf( LogFileFd, "[fof], edge: %i, region: %i\n", Nfof, Nfof );
     put_end();
 
 }

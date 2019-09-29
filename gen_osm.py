@@ -1,4 +1,4 @@
-#!/home/hkli/anaconda3/bin/python3
+#!/usr/bin/env python3
 
 from matplotlib import use
 use( 'agg' )

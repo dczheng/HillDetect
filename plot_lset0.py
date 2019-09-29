@@ -44,4 +44,7 @@ f.close()
 
 axs[1].imshow( img, norm=mplc.LogNorm(), cmap=cm.jet )
 
+for i in range(2):
+    axs[i].invert_yaxis()
+
 fig.savefig( 'lset0.png' )
