@@ -6,36 +6,30 @@
 #include "allvars.h"
 #include "drfftw.h"
 
-void sigma_clipping( int mode ) {
+double RSigma, FacRSigma;
+int LogNorm;
+void sigma_clipping() {
 
     int i;
-    double sigma, mu, vmin, r;
+    double sigma, mu, vmin;
+#define SET_NAN_TO_VMIN
 
-    if ( mode==0 ) {
-        if ( All.SigmaClipping == 0 )
-            return;
-        else 
-            r = All.RSigma;
-    }
-
-    if ( mode==1) {
-        if ( All.SigmaClipping1 == 0 )
-            return;
-        else
-            r = All.RSigma1;
-    }
-
+#ifdef SET_NAN_TO_VMIN
     vmin = 1e100;
     for ( i=0; i<Npixs; i++ ) {
         if ( isnan( Data[i] ) )
             continue;
         vmin = ( vmin < Data[i] ) ? vmin : Data[i];
     }
+#endif
 
     for( i=0, mu=0; i<Npixs; i++ ) {
         if ( isnan( Data[i] ) )
+#ifdef SET_NAN_TO_VMIN
             Data[i] = vmin;
-
+#else
+            Data[i] = 0;
+#endif
         mu += Data[i];
     }
 
@@ -45,24 +39,39 @@ void sigma_clipping( int mode ) {
         sigma += SQR( Data[i] - mu );
     }
     sigma = sqrt( sigma / Npixs );
-    vmin = mu + r * sigma;  
 
+    vmin = 1e100;
+    for( i=0; i<Npixs; i++ )
+        if ( Data[i]<vmin )
+            vmin = Data[i];
+    
+    if ( mu+RSigma*sigma <= vmin ) {
+        printf( "[Group: %i] mu: %g, sigma: %g \nRSigma: %f, vmin: %g"
+                "mu+RSigma*sigma: %g\n",
+        CurGroup, mu, sigma, RSigma, vmin,
+        mu+RSigma*sigma );
+        printf( "chage RSigma:\n" );
+    }
+
+    while(mu + RSigma * sigma <= vmin){
+        RSigma /= FacRSigma;
+        printf( "RSigma: %g\n", RSigma );
+    }
+
+    vmin = mu + RSigma * sigma;
     for( i=0; i<Npixs; i++ ) {
         if ( Data[i] < vmin )
             Data[i] = vmin; 
     }
+    SigmaClippingVmin = vmin;
 
 }
 
-void data_cuting( int mode ) {
+void data_cuting() {
 
     int i, j;
     int index;
 
-    if ( mode == 1 )
-        return;
-
-    put_header( "data cutting", mode );
     HStartCut = Height * All.CuttingYStart;
     HEndCut = Height * All.CuttingYEnd;
     WStartCut = Width * All.CuttingXStart;
@@ -92,30 +101,24 @@ void data_cuting( int mode ) {
     WidthGlobal = Width = WEndCut - WStartCut;
     NpixsGlobal = Npixs = Height * Width;
 
-    put_end();
     //output_data( "after_cutting.dat" );
     //endrun( "test" );
 }
 
-void normalize( int mode ) {
+void normalize() {
 
-    double vmin, vmax, dv, logflag;
+    double vmin, vmax, dv;
     int i;
 
     vmax = -1e100;
     vmin = 1e100;
-
-    if ( mode == 0 )
-        logflag = All.LogNorm;
-    if ( mode == 1 )
-        logflag = All.LogNorm1;
 
     for( i=0; i<Npixs; i++ ) {
 
         if ( isnan( Data[i] ) )
             continue;
 
-        if ( logflag ) {
+        if ( LogNorm ) {
             if ( Data[i] > 0 )
                 vmin = ( vmin < Data[i] ) ? vmin : Data[i];
         }
@@ -131,18 +134,18 @@ void normalize( int mode ) {
         if ( isnan( Data[i] ) )
             Data[i] = vmin;
 
-        if ( logflag )
+        if ( LogNorm )
             if ( Data[i] < vmin )
                 Data[i] = vmin;
     }
 
-    if ( logflag )
+    if ( LogNorm )
         dv =log( vmax / vmin );
     else
         dv = vmax - vmin;
 
     for ( i=0; i<Npixs; i++ ) {
-        if ( logflag )
+        if ( LogNorm )
             Data[i] = log( Data[i]/vmin ) / dv;
         else
             Data[i] = ( Data[i] - vmin ) / dv;
@@ -150,6 +153,7 @@ void normalize( int mode ) {
 
 }
 
+/*
 void ft_clipping( int mode ){
 
     int i, j, N2;
@@ -226,19 +230,44 @@ void ft_clipping( int mode ){
     fclose( fd );
 
 }
+*/
 
 void pre_proc( int mode ) {
     
     put_header( "pre proc", mode );
 
+/*
     if ( All.FTClipping )
         ft_clipping( mode );
+*/
 
-    sigma_clipping( mode );
+    if ( mode==0 ) {
+        if ( All.SigmaClipping ) {
+            RSigma = All.RSigma;
+            FacRSigma = All.FacRSigma;
+            sigma_clipping();
+        }
 
-    if ( All.DataCutting )
-        data_cuting( mode );
+        if ( All.DataCutting )
+            data_cuting();
 
-    normalize( mode );
+        LogNorm = All.LogNorm;
+        normalize();
+
+    }
+
+    if ( mode==1) {
+        if ( All.SigmaClipping1 ) {
+            RSigma = All.RSigma1;
+            FacRSigma = All.FacRSigma1;
+            sigma_clipping();
+        }
+
+        if ( All.Lset1 ) {
+            LogNorm = All.LogNorm1;
+            normalize();
+        }
+    }
+
     put_end();
 }

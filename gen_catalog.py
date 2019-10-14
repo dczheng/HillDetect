@@ -61,7 +61,7 @@ for gidx in range( NGroups ):
 
     for j in range( Nregs ):
         c = g.attrs[ 'Center-%i'%j ]
-        flux = g.attrs[ 'Flux-%i'%j ]
+        flux = g.attrs[ 'FluxTot-%i'%j ]
         deci = c[0] + crpixy + Gcrpix[0]
         rai = c[1] + crpixx + Gcrpix[1]
 

@@ -62,6 +62,7 @@ void lset_find_region() {
     Nfof = p;
 }
 
+#define GROUP_FINDER_DEBUG
 void group_finder() {
 
     int p, i, xi, yi, *data, index, h5_ndims, crpix[2], c[2], j;
@@ -69,12 +70,15 @@ void group_finder() {
     hid_t h5_dsp, h5_ds, h5_attr;
     double flux_tot, *flux, f, fmax;
     char buf[100];
+#ifdef GROUP_FINDER_DEBUG
+    int di=0;
+#endif
 
     group_finder_init();
 
     for( p=0; p<Npixs; p++ ) {
         fof_map[p] = 0;
-        if ( Data[p] > 0 ) {
+        if ( Data[p] > SigmaClippingVmin ) {
            fof_map[p] = 1;
         } 
 
@@ -138,7 +142,11 @@ void group_finder() {
             }
                 
             f = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ];
-
+#ifdef GROUP_FINDER_DEBUG
+            printf( "[%i], (%i, %i), %g\n", di, yi+YShift+HStartCut,
+            xi+XShift+WStartCut, f );
+            di ++;
+#endif
             if ( All.PeakCenterFlag ) {
                 if ( f>fmax ) {
                     fmax = f;
@@ -162,6 +170,10 @@ void group_finder() {
             c[0] /= (double)Len[i];
             c[1] /= (double)Len[i];
         }
+#ifdef GROUP_FINDER_DEBUG
+        printf( "tot: %g, len: %i\n", flux_tot, Len[i] );
+        endrun( "group-finder-debug" );
+#endif
 
         sprintf( buf, "Center-%i", i );
         h5_ndims = 1;
@@ -197,6 +209,14 @@ void group_finder() {
         h5_attr = H5Acreate( h5_RegsGroup, buf, H5T_NATIVE_DOUBLE, h5_dsp,
             H5P_DEFAULT);
         H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &flux_tot );
+        H5Aclose( h5_attr );
+        H5Sclose( h5_dsp  );
+
+        sprintf( buf, "PeakFlux-%i", i );
+        h5_dsp = H5Screate( H5S_SCALAR );
+        h5_attr = H5Acreate( h5_RegsGroup, buf, H5T_NATIVE_DOUBLE, h5_dsp,
+            H5P_DEFAULT);
+        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &fmax );
         H5Aclose( h5_attr );
         H5Sclose( h5_dsp  );
 

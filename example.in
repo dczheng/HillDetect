@@ -15,12 +15,14 @@ Lambda11        1
 Lambda21        1
 TimeStep1       0.1
 
+MinEdgeInSecondFinder        10
 
 %---------------------- input options
 ParalleLevel   1
 InputDir        ./test_fits
 FileNameList    ./filelist.txt
-FileName        ./test_fits/new.fits
+%FileName        ./test_fits/render_mask.fits
+FileName        ./test_fits/3c28_re_0.4.fits
 
 %---------------------- output options
 IsSavePhi       0
@@ -32,18 +34,16 @@ LogNorm         1
 LogNorm1        1
 SigmaClipping   1
 SigmaClipping1  1
-RSigma          0.3 
-RSigma1         0.1 
+RSigma          0.05
+FacRSigma       1
+RSigma1         0.5
+FacRSigma1      1.1    % > 1
 FTClipping      0
 DataCutting     1
-%CuttingXStart   0.475
-CuttingXStart   0.4
-CuttingXEnd     0.6
-%CuttingYStart   0.6
-CuttingYStart   0.225 
-CuttingYEnd     0.725
-%CuttingXStart   0.225 
-%CuttingXEnd     0.725
+CuttingXStart   0.24
+CuttingXEnd     0.76
+CuttingYStart   0.24
+CuttingYEnd     0.76
 
 %---------------------- group finder options
 PeakCenterFlag       1

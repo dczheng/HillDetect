@@ -27,7 +27,7 @@ print( iters )
 f.close()
 
 axs[0].imshow( map0, norm=mplc.LogNorm(), cmap=cm.jet )
-axs[0].plot( lines[0,:], lines[1,:], 'b.', ms=0.5  )
+axs[0].plot( lines[0,:], lines[1,:], 'b.', ms=0.3  )
 
 img = np.zeros( map0.shape )
 f = h5py.File( "%s/%s_map1.hdf5"%(outdir,  filepre), 'r' )
@@ -47,4 +47,4 @@ axs[1].imshow( img, norm=mplc.LogNorm(), cmap=cm.jet )
 for i in range(2):
     axs[i].invert_yaxis()
 
-fig.savefig( 'lset0.png' )
+fig.savefig( 'lset0.png',dpi=300 )

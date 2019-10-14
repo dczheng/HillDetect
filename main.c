@@ -53,8 +53,8 @@ void run0() {
 void run_first_finder() {
 
     char buf[100];
-    hid_t h5_ds, h5_dsp;
-    int h5_ndims;
+    hid_t h5_ds, h5_dsp, h5_attr;
+    int h5_ndims, Xs[2];
     hsize_t h5_dims[2];
 
     pre_proc(0);
@@ -84,9 +84,28 @@ void run_first_finder() {
         h5_EdgesGroup = H5Gcreate( h5_EdgesRegs, "Edges", 0 );
         h5_RegsGroup =  H5Gcreate( h5_EdgesRegs, "Regs", 0 );
 
+        h5_ndims = 1;
+        h5_dims[0] = 2;
+        Xs[0] = HStartCut;
+        Xs[1] = WStartCut;
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_attr = H5Acreate( h5_EdgesRegs, "CRPIX", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+        H5Aclose( h5_attr );
+        H5Sclose( h5_dsp );
+
+        Xs[0] = HEndCut-HStartCut;
+        Xs[1] = WEndCut-WStartCut;
+        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
+        h5_attr = H5Acreate( h5_EdgesRegs, "NAXIS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
+        H5Aclose( h5_attr );
+        H5Sclose( h5_dsp );
+
         sprintf( buf, "%s/%s_lset0_lines.hdf5", All.OutputDir, InputBaseName );
         h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
         h5_LinesGroup = H5Gcreate( h5_Lines, "Lines", 0 );
+
 
     }
 
@@ -106,7 +125,7 @@ void run_first_finder() {
     memcpy( len_lset0,  Len, sizeof(int) * Npixs );
 
     gn = 0;
-    while( len_lset0[gn]>20 )
+    while( len_lset0[gn]> All.MinEdgeInSecondFinder )
         gn++;
 
     group_finder_free();
@@ -480,6 +499,8 @@ void run_second_finder() {
     {
         if ( k % NTask != ThisTask )
             continue;
+
+        CurGroup = k;
         xmin = ymin = INT_MAX;
         xmax = ymax = -xmin;
         p = head_lset0[k];

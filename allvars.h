@@ -34,10 +34,11 @@ typedef struct GlobalParams {
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
-         DataCutting, ParalleLevel, Lset1, PeakCenterFlag;
+         DataCutting, ParalleLevel, Lset1, PeakCenterFlag,
+         MinEdgeInSecondFinder;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
-    RSigma, RSigma1,
+            RSigma, FacRSigma, RSigma1, FacRSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd ; 
 
@@ -46,14 +47,14 @@ typedef struct GlobalParams {
 //extern_start
 extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
-              FREQ;
+              FREQ, SigmaClippingVmin;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             ThisTask, NTask, FileNum,
             Nfof,
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
-            HStartCut, HEndCut, WStartCut, WEndCut;
+            HStartCut, HEndCut, WStartCut, WEndCut, CurGroup;
 
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;
