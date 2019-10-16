@@ -62,7 +62,7 @@ void lset_find_region() {
     Nfof = p;
 }
 
-#define GROUP_FINDER_DEBUG
+//#define GROUP_FINDER_DEBUG
 void group_finder() {
 
     int p, i, xi, yi, *data, index, h5_ndims, crpix[2], c[2], j;
@@ -163,8 +163,10 @@ void group_finder() {
             p = Next[p];
         }
 
-        for( j=0,flux_tot=0; j<Len[i]; j++ )
+        for( j=0,flux_tot=0; j<Len[i]; j++ ) {
+            flux[j] *= fabs( CDELT1*CDELT2 ) / All.Beam;
             flux_tot += flux[j];
+        }
 
         if ( !All.PeakCenterFlag ) {
             c[0] /= (double)Len[i];

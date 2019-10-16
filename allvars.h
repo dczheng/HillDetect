@@ -40,7 +40,7 @@ typedef struct GlobalParams {
             Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
             RSigma, FacRSigma, RSigma1, FacRSigma1,
             CuttingXStart, CuttingXEnd,
-            CuttingYStart, CuttingYEnd ; 
+            CuttingYStart, CuttingYEnd, Beam; 
 
 }GlobalParams;
 

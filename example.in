@@ -15,14 +15,14 @@ Lambda11        1
 Lambda21        1
 TimeStep1       0.1
 
-MinEdgeInSecondFinder        10
+MinEdgeInSecondFinder        15
 
 %---------------------- input options
 ParalleLevel   1
 InputDir        ./test_fits
 FileNameList    ./filelist.txt
-%FileName        ./test_fits/render_mask.fits
-FileName        ./test_fits/3c28_re_0.4.fits
+%FileName        ./test_fits/rt800v1.fits
+FileName        ./test_fits/rt800v1.fits
 
 %---------------------- output options
 IsSavePhi       0
@@ -34,9 +34,9 @@ LogNorm         1
 LogNorm1        1
 SigmaClipping   1
 SigmaClipping1  1
-RSigma          0.05
+RSigma          0.1
 FacRSigma       1
-RSigma1         0.5
+RSigma1         0.3
 FacRSigma1      1.1    % > 1
 FTClipping      0
 DataCutting     1
@@ -47,3 +47,4 @@ CuttingYEnd     0.76
 
 %---------------------- group finder options
 PeakCenterFlag       1
+Beam                 4.915e-6  % deg^2

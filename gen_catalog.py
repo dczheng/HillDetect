@@ -48,7 +48,7 @@ fmt_csv = "%s,%s,%s,%s,%s,%s,%s,%s\n"
 fout.write( fmt%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
 fout_csv.write( fmt_csv%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
 fmt = "%6i %12s %12s %10f %4i %5i %10f %10f\n"
-fmt_csv = "%i,%s,%s,%f,%i,%i,%f,%f\n"
+fmt_csv = "%i,%s,%s,%e,%i,%i,%f,%f\n"
 
 index = 0
 ddd = []
@@ -100,17 +100,17 @@ for i in range(index-1):
             ddd[i] = ddd[j]
             ddd[j] = t
 def skymodel_write( fd, name, ra, dec, freq, flux ):
-    fd.write( "source{\n" )
-    fd.write( "\tname \"%s\"\n"%name )
-    fd.write( "\t\tcomponent{\n" )
-    fd.write( "\t\t\ttype point\n" )
-    fd.write( "\t\t\tposition %s %s\n"%(ra, dec) )
-    fd.write( "\t\t\tmsurement{\n" )
-    fd.write( "\t\t\t\tfrequency %g MHz\n"%freq )
-    fd.write( "\t\t\t\tfluxdensity K %g 0 0 0 \n"%flux )
-    fd.write( "\t\t}\n" )
-    fd.write( "\t}\n" )
-    fd.write( "}\n\n" )
+    fd.write( "source {\n" )
+    fd.write( "  name \"%s\"\n"%name )
+    fd.write( "    component {\n" )
+    fd.write( "      type point\n" )
+    fd.write( "      position %s %s\n"%(ra, dec) )
+    fd.write( "      measurement {\n" )
+    fd.write( "        frequency %g MHz\n"%freq )
+    fd.write( "        fluxdensity Jy %g 0 0 0 \n"%flux )
+    fd.write( "    }\n" )
+    fd.write( "  }\n" )
+    fd.write( "}\n" )
 
 f_skymdel = open( "skymodel.txt", "w" )
 f_skymdel.write( "skymodel fileformat 1.1\n" )

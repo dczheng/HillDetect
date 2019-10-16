@@ -81,8 +81,9 @@ void read_fits( char *fits_fn ) {
     //print_data( Data, 230, 290, 580, 640, 0 );
 
     DataRaw = (double*)malloc(na*sizeof(double));
-    for( i=0; i<Npixs; i++ )
+    for( i=0; i<Npixs; i++ ) {
         DataRaw[i] = Data[i];
+    }
 
     //print_data( DataRaw, 230, 640, 580, 640, 0 );
 
