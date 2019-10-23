@@ -46,7 +46,7 @@ void sigma_clipping() {
             vmin = Data[i];
     
     if ( mu+RSigma*sigma <= vmin ) {
-        printf( "[Group: %i] mu: %g, sigma: %g \nRSigma: %f, vmin: %g"
+        printf( "[Group: %i] mu: %g, sigma: %g \nRSigma: %f, vmin: %g,"
                 "mu+RSigma*sigma: %g\n",
         CurGroup, mu, sigma, RSigma, vmin,
         mu+RSigma*sigma );

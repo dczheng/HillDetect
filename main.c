@@ -106,7 +106,6 @@ void run_first_finder() {
         h5_Lines = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
         h5_LinesGroup = H5Gcreate( h5_Lines, "Lines", 0 );
 
-
     }
 
     XShift = 0;

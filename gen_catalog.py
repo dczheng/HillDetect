@@ -43,12 +43,12 @@ print( NGroups )
 
 fout = open( 'catalog.txt', 'w' )
 fout_csv = open( 'catalog.csv', 'w' )
-fmt = "%6s %12s %12s %10s %5s %5s %10s %10s\n"
+fmt = "%6s %26s %26s %16s %6s %6s %16s %16s\n"
 fmt_csv = "%s,%s,%s,%s,%s,%s,%s,%s\n"
 fout.write( fmt%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
 fout_csv.write( fmt_csv%( 'index', 'ra', 'dec', 'flux', 'rai', 'deci', 'ra[deg]', 'dec[deg]' ) )
-fmt = "%6i %12s %12s %10f %4i %5i %10f %10f\n"
-fmt_csv = "%i,%s,%s,%e,%i,%i,%f,%f\n"
+fmt = "%6i %26s %26s %.10e %6i %6i %.10e %.10e\n"
+fmt_csv = "%i,%s,%s,%.10e,%i,%i,%.10e,%.10e\n"
 
 index = 0
 ddd = []
@@ -80,7 +80,7 @@ for gidx in range( NGroups ):
         ra = ra - h * 15 
         m = int( ra/(15)*60 )
         s = (ra - m*15/60) / 360 * 24 * 60 * 60
-        ra2 = "%ih%im%is"%( h, m, s )
+        ra2 = "%ih%im%.10fs"%( h, m, s )
 
         dec = dec1
         sign = dec / np.abs(dec)
@@ -89,7 +89,7 @@ for gidx in range( NGroups ):
         dec = (dec - int(dec)) * 60
         m = int(dec)
         s = (dec - int(dec)) * 60
-        dec2 = "%id%im%is"%( d, m, s )
+        dec2 = "%id%im%.10fs"%( d, m, s )
 
         ddd.append( (index, ra2, dec2, flux, rai, deci, ra1, dec1) )
         index += 1

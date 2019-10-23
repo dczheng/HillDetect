@@ -62,7 +62,18 @@ def skymodel_write_comp( fd, ra, dec, freq, flux ):
 f_skymdel = open( "skymodel_regs.txt", "w" )
 f_skymdel.write( "skymodel fileformat 1.1\n" )
 
+fimage_out_csv = open("skymodel_image.csv", "w")
+fimage_out_txt = open("skymodel_image.txt", "w")
+fmt_skymodel_out_txt = "%6s %16s %26s %26s %16s %6s %6s %16s %16s\n"
+fimage_out_txt.write( fmt_skymodel_out_txt%( "index",  "sindex", "ra", "dec", "flux", "rai", "deci", "ra[deg]", "dec[deg]") )
+fmt_skymodel_out_csv = "%s,%s,%s,%s,%s,%s,%s,%s,%s\n"
+fimage_out_csv.write( fmt_skymodel_out_csv%( "index", "sindex", "ra", "dec", "flux", "rai", "deci", "ra[deg]", "dec[deg]") )
+fmt_skymodel_out_txt = "%6i %16s %26s %26s %.10e %6i %6i %.10e %.10e\n"
+fmt_skymodel_out_csv = "%i,%s,%s,%s,%.10e,%i,%i,%.10e,%.10e\n"
+
+
 idx = 0
+index = 0
 for gidx in range( NGroups ):
     g = f[ '/Group%i'%gidx ]
     crpixy, crpixx = g.attrs[ 'CRPIX' ]
@@ -70,13 +81,14 @@ for gidx in range( NGroups ):
     #print( "CRPIX: %i %i"%( crpixy, crpixx ) )
     #print( "Nregs: %i"%Nregs )
 
-
+    
     for j in range( Nregs ):
 
         c = g['Reg-%i'%j ][()]
         flux = g[ 'Flux-%i'%j ][()]
         skymodel_write_head( f_skymdel, "Group-%i-Reg-%i-%i"%(gidx, j, idx) )
-
+        
+        sindex = "Group-%i-Reg-%i-%i" %(gidx, j, idx)
         for k in range(len(flux)):
             deci = c[0, k] + crpixy + Gcrpix[0]
             rai =   c[1, k] + crpixx + Gcrpix[1]
@@ -101,9 +113,15 @@ for gidx in range( NGroups ):
             s = (dec - int(dec)) * 60
             dec2 = "%id%im%.10es"%( d, m, s )
             skymodel_write_comp( f_skymdel, ra2, dec2, freq, flux[k] )
+            l = (index, sindex, ra2, dec2, flux[k], rai, deci, ra1, dec1)
+            fimage_out_txt.write(fmt_skymodel_out_txt%l)
+            fimage_out_csv.write(fmt_skymodel_out_csv%l)
+            index += 1
+
 
         skymodel_write_tail( f_skymdel )
         idx += 1
 
 f_skymdel.close()
-
+fimage_out_txt.close()
+fimage_out_csv.close()
