@@ -34,23 +34,33 @@ fs =  [\
 "%s/map.hdf5"%output_dir,\
 "%s/map_after.hdf5"%output_dir,\
 "%s/fof_regs.hdf5"%output_dir,\
-"%s/lset_edges_regs.hdf5"%output_dir,\
+"%s/lset_regs.hdf5"%output_dir,\
 "%s/lset_lines.hdf5"%output_dir,\
 ]
 h5_fs = []
 for f in fs:
     print( "load '%s'"%f )
     h5_fs.append( h5py.File( f, 'r' ) )
-maps, maps_after, fof_regs, lset_er, lset_lines = h5_fs
+maps, maps_after, fof_regs, lset_regs, lset_lines = h5_fs
 
 hdu = fits.open( fits_file )[0]
 fits_h = hdu.header
 fits_d = hdu.data[0,0,:,:]
 
+if Ngroup == 0:
+    Ngroup = maps.attrs[ "Ngroup" ]
+    print( fmt%("set Ngroup to", str(Ngroup)) )
+
+
 def plot_maps():
 
     print( "plot maps ..." )
+
     n = 5
+
+    if n > Ngroup:
+        n = Ngroup // 2
+
     m = Ngroup // n
     if ( Ngroup % n != 0 ):
         m += 1
@@ -65,9 +75,11 @@ def plot_maps():
         crpix = maps[ '/Group%i'%i ].attrs[ 'CRPIX' ]
         #print( crpix )
         img = maps[ '/Group%i/map'%i ][()]
+        
         ax.imshow( img, norm=mplc.LogNorm(), cmap=cm.jet )
 
         img1 = maps_after[ '/Group%i/map'%i ][()]
+        img1[img1==img1.min()] =  -1
         ax1.imshow( img1, norm=mplc.LogNorm(), cmap=cm.jet )
 
         NRegs = fof_regs['/Group%i'%i].attrs[ 'NReg' ]
@@ -75,13 +87,29 @@ def plot_maps():
         f = 0
         for j in range(NRegs):
             r = fof_regs[ '/Group%i/Reg-%i'%(i,j) ][()]
+            c = fof_regs[ '/Group%i'%i ].attrs[ 'Center-%i'%j ]
+            xyerr = fof_regs[ '/Group%i'%i ].attrs[ 'XYerr-%i'%j ]
             x = r[1,:]
             y = r[0,:]
             y = y - crpix[0]
             x = x - crpix[1]
+            c = c - crpix
             ax.plot( x, y, 'k*' )
             ax1.plot( x, y, 'k*' )
+
+            ax.plot( [c[1]], [c[0]], '*', ms=40 )
+            ax1.plot( [c[1]], [c[0]], '*', ms=40 )
+
+
+            ax.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
+            ax1.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
             f = f + img[ y, x ].sum()
+
+        sig = fof_regs[ '/Group%i'%i ].attrs[ 'Sigma' ]
+        ax.set_title( "%.2e"%sig, fontsize=50 )
+        ax1.set_title( "%.2e"%sig, fontsize=50 )
+
+
         print( "flux_fof: %.3e,  flux_tot: %.3e, percent: %.2f%%"%(f, img.sum(),\
         f / img.sum() * 100) )
         mm, nn = img.shape
@@ -111,7 +139,7 @@ def plot_lset():
 
     iters = lset_lines.attrs[ 'iters' ]
     print( "iters: %i"%iters )
-    line = lset_lines[ 'lines-%i'%iters ][()]
+    line = lset_lines[ 'line-%i'%iters ][()]
     y = line[0,:] - cutstart[0]
     x = line[1,:] - cutstart[1]
     axs[0,1].plot( x, y, 'b.', ms=0.3  )
@@ -128,7 +156,7 @@ def plot_lset():
     axs[1,0].imshow( img, norm=norm, cmap=cm.jet )
 
     fits_mask = fits_d.copy()
-    NN = maps.attrs['NGroup']
+    NN = maps.attrs['Ngroup']
     for i in range(NN):
         g = maps[ '/Group%i'%i ]
         m0, n0 = g.attrs[ 'CRPIX' ]

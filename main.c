@@ -5,7 +5,6 @@
 
 #include "allvars.h"
 
-int ng;
 hid_t h5_map, h5_map_after;
 
 void run_first_finder() {
@@ -15,13 +14,9 @@ void run_first_finder() {
 
     pre_proc(0);
 
-    lset_Next_edge = malloc( sizeof(int) * Npixs );
-    lset_Head_edge = malloc( sizeof(int) * Npixs );
-    lset_Len_edge = malloc( sizeof(int) * Npixs );
-
-    lset_Next_reg = malloc( sizeof(int) * Npixs );
-    lset_Head_reg = malloc( sizeof(int) * Npixs );
-    lset_Len_reg = malloc( sizeof(int) * Npixs );
+    lset_Next = malloc( sizeof(int) * Npixs );
+    lset_Head = malloc( sizeof(int) * Npixs );
+    lset_Len = malloc( sizeof(int) * Npixs );
 
     lset();
 
@@ -65,7 +60,7 @@ void open_files_for_second_finder() {
     h5_attr = H5Acreate( h5_map, "CutEnd", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
     H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
     H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map_after, "CutStart", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+    h5_attr = H5Acreate( h5_map_after, "CutEnd", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
     H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
     H5Aclose( h5_attr );
     H5Sclose( h5_dsp );
@@ -74,14 +69,14 @@ void open_files_for_second_finder() {
     h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
  
     h5_dsp = H5Screate( H5S_SCALAR );
-    h5_attr = H5Acreate( h5_fof, "NGroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &ng );
+    h5_attr = H5Acreate( h5_fof, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
     H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map, "NGroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &ng );
+    h5_attr = H5Acreate( h5_map, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
     H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map_after, "NGroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &ng );
+    h5_attr = H5Acreate( h5_map_after, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
+    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
     H5Aclose( h5_attr );
     H5Sclose( h5_dsp );
  
@@ -101,48 +96,17 @@ void run_second_finder() {
     hsize_t h5_dims[2];
 
     int i, p, j, k, Xs[2],
-         xmin, xmax, ymin, ymax, x, y, w, h, flag, index;
+         xmin, xmax, ymin, ymax, x, y, w, h;
     put_start;
 
-    ng = 0;
-    while( lset_Len_reg[ng] >= All.MinEdgeInSecondFinder )
-        ng++;
-
-    printf( "Ngroup [with edge lenght >= %i]: %i\n",
-                All.MinEdgeInSecondFinder, ng );
-
-    //remove group close edge
-    for( k=0, index=0; k<ng; k++ ) {
-        flag = 0;
-        p = lset_Head_reg[k];
-
-        while( p>=0 ) {
-            x = p % WidthGlobal;
-            y = p / WidthGlobal;
-            p = lset_Next_reg[p];
-            if ( x == 0 || y == 0 ) {
-                flag = 1;
-                break;
-            }
-        }
-        if ( flag == 0 ) {
-            lset_Head_reg[index] = lset_Head_reg[k];
-            lset_Len_reg[index] = lset_Len_reg[k];
-            index++;
-        }
-    }
-
-    ng = index;
-    printf( "Ngroup [real]: %i\n", ng );
-
     open_files_for_second_finder();
-    for( k=0; k<ng; k++ ) {
+
+    for( k=0; k<lset_Nreg; k++ ) {
 
         CurGroup = k;
         xmin = ymin = INT_MAX;
         xmax = ymax = -xmin;
-        p = lset_Head_reg[k];
-        flag = 0;
+        p = lset_Head[k];
         while(p>=0) {
             x = p % WidthGlobal;
             y = p / WidthGlobal;
@@ -150,12 +114,16 @@ void run_second_finder() {
             xmax = ( x>xmax ) ? x : xmax;
             ymin = ( y<ymin ) ? y : ymin;
             ymax = ( y>ymax ) ? y : ymax;
-            p = lset_Next_reg[p];
+            p = lset_Next[p];
         }
 
         printf( "group %05i [%05i] "
                 "region: (%i, %i) - (%i, %i)\n",
-                 k, lset_Len_reg[k], xmin, ymin, xmax, ymax );
+                 k, lset_Len[k],
+                 xmin + WStartCut,
+                 ymin + HStartCut,
+                 xmax + WStartCut,
+                 ymax + HStartCut );
         
 
         h = ymax - ymin;
@@ -240,15 +208,15 @@ void run() {
 
     run_first_finder();
     put_sep;
-    run_second_finder();
 
-    free( lset_Next_edge );
-    free( lset_Head_edge );
-    free( lset_Len_edge );
+    if ( !All.DisableSecondFinder ) {
+        run_second_finder();
+        put_sep;
+    }
 
-    free( lset_Next_reg );
-    free( lset_Head_reg );
-    free( lset_Len_reg );
+    free( lset_Next );
+    free( lset_Head );
+    free( lset_Len );
 
     free_fits();
 
@@ -268,11 +236,7 @@ int main( int argc, char **argv ) {
     sprintf( All.OutputDir, "%s/%s", All.OutputDir, InputBaseName );
     create_dir( All.OutputDir );
 
-    put_sep;
-
     run();
-
-    put_sep;
 
     return 0;
 

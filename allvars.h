@@ -32,7 +32,7 @@ typedef struct GlobalParams {
          SigmaClipping1,
          FTClipping,
          DataCutting, PeakCenterFlag,
-         MinEdgeInSecondFinder;
+         MinReg, DisableSecondFinder;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             RSigma, FacRSigma, RSigma1, FacRSigma1,
             CuttingXStart, CuttingXEnd,
@@ -50,8 +50,7 @@ extern int
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
             HStartCut, HEndCut, WStartCut, WEndCut, CurGroup,
-            *lset_Next_edge, *lset_Head_edge, *lset_Len_edge, lset_Nedge,
-            *lset_Next_reg, *lset_Head_reg, *lset_Len_reg, lset_Nreg;
+            *lset_Next, *lset_Head, *lset_Len, lset_Nreg;
 
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;

@@ -146,7 +146,7 @@ void save_line( int iter ) {
     }
 
     h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    sprintf( buf, "lines-%i", iter );
+    sprintf( buf, "line-%i", iter );
     //printf( "save %s\n", buf );
     h5_dataset = H5Dcreate( f_lset_h5, buf, H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
     H5Dwrite( h5_dataset, H5T_NATIVE_INT, h5_dataspace, H5S_ALL, H5P_DEFAULT, edges );
