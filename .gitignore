@@ -21,3 +21,4 @@ protos.h
 *.in
 case/
 aegean_test/
+HillDetect

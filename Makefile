@@ -15,9 +15,9 @@ INCL       = $(GSL_INCL) $(FITS_INCL) $(FFTW_INCL) $(HDF5_INCL)
 
 OPTS       = $(FITS_OPTS)  $(HDF5_OPTS) -Wall #-O2 #-O3
 DEBUG     ?=
-CC         =  mpicc 
+CC         =  gcc 
 
-EXEC       =  ./bin/fgext
+EXEC       =  HillDetect
 SRCS       =  $(wildcard *.c) 
 MY_INCL    =  $(wildcard *.h)
 OBJS       =  $(SRCS:.c=.o)

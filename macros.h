@@ -1,11 +1,4 @@
 #define SQR(X)  ( (X)*(X) )
-#define writelog( fmt, ... ) { \
-    fprintf( LogFileFd, fmt, ##__VA_ARGS__ ); \
-    fflush( LogFileFd ); \
-    if ( ThisTask == 0 ) { \
-        printf( fmt, ##__VA_ARGS__ ); \
-    }\
-}
 
 #define myfopen( opt, fmt, ... ) ({\
     char fopenbuf[100];\
@@ -30,7 +23,6 @@
 #define endrun0( fmt, ... ) {\
     fprintf( stderr, fmt, ##__VA_ARGS__ ); \
     fprintf( stderr, "END IN: ( %s %s %i )\n" , __FILE__, __FUNCTION__, __LINE__ ); \
-    MPI_Abort( MPI_COMM_WORLD, 0 ); \
     exit( 0 ); \
 }
 
@@ -38,33 +30,30 @@
     endrun0( "error info: %s\n", s ); \
 }
 
-#define do_sync MPI_Barrier( MPI_COMM_WORLD );
+#define put_sep printf( sep_str );
 
-#define put_sep writelog( sep_str );
-
-#define mytimer_start() \
+#define mytimer_start \
     double timer1, timer2;\
     (void) timer1;\
     (void) timer2;\
-writelog( "[Timer Start in `%s`]\n", __FUNCTION__ ); \
+printf( "[Timer Start in `%s`]\n", __FUNCTION__ ); \
     timer1 = second(); \
     timer2 = timer1;
 
-#define mytimer() \
-    writelog( "[Time in `%s`]: %g sec\n", __FUNCTION__, second() - timer2 ); \
+#define mytimer \
+    printf( "[Time in `%s`]: %g sec\n", __FUNCTION__, second() - timer2 ); \
     timer2 = second();
 
-#define mytimer_end() \
-    writelog( "[Total Time in `%s`]: [%g sec]\n", __FUNCTION__, second() - timer1 ); \
+#define mytimer_end \
+    printf( "[Total Time in `%s`]: [%g sec]\n", __FUNCTION__, second() - timer1 ); \
 
-#define put_header( s, mode ) {\
-    if ( mode == 0 ) \
-        writelog( ">>> %s\n", s );\
-    WATCH_POINT( "debug point" );\
-}
-#define put_end() {\
-    WATCH_POINT( "debug point" );\
+#define put_start {\
+    printf( ">>> start `%s`\n", __FUNCTION__ );\
 }
 
-#define writelog1( a ) writelog( "%-20s: %i\n", #a, a )
-#define writelog2( a ) writelog( "%-20s: %g\n", #a, a )
+#define put_end {\
+    printf( ">>> end `%s`\n", __FUNCTION__ );\
+}
+
+#define printf1( a ) printf( "%-20s: %i\n", #a, a )
+#define printf2( a ) printf( "%-20s: %g\n", #a, a )

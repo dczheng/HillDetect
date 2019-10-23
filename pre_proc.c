@@ -82,11 +82,11 @@ void data_cuting() {
         endrun( "Invalid cutting parameters." );
     }
 
-    writelog( "Height: %i, Width: %i\n", Height, Width );
-    writelog( "region: (%g, %g), (%g, %g)\n",
+    printf( "Height: %i, Width: %i\n", Height, Width );
+    printf( "region: (%g, %g), (%g, %g)\n",
                 All.CuttingYStart, All.CuttingYEnd, 
                 All.CuttingXStart, All.CuttingXEnd );
-    writelog( "region: (%i, %i), (%i, %i)\n",
+    printf( "region: (%i, %i), (%i, %i)\n",
             HStartCut, HEndCut, WStartCut, WEndCut );
 
     //output_data( "before_cutting.dat" );
@@ -234,8 +234,7 @@ void ft_clipping( int mode ){
 
 void pre_proc( int mode ) {
     
-    put_header( "pre proc", mode );
-
+    put_start;
 /*
     if ( All.FTClipping )
         ft_clipping( mode );
@@ -262,12 +261,7 @@ void pre_proc( int mode ) {
             FacRSigma = All.FacRSigma1;
             sigma_clipping();
         }
-
-        if ( All.Lset1 ) {
-            LogNorm = All.LogNorm1;
-            normalize();
-        }
     }
+    put_end;
 
-    put_end();
 }

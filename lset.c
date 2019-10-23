@@ -9,6 +9,9 @@
 
 #include "allvars.h"
 
+FILE *fd_lset_err;
+hid_t f_lset_h5;
+
 void get_c1_c2( double *c1, double *c2 ) {
 
     int i;
@@ -106,10 +109,10 @@ void save_line( int iter ) {
 
 
     if ( iter == 1 ) {
-        h5_attr = H5Acreate( h5_LinesGroup, "iters", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+        h5_attr = H5Acreate( f_lset_h5, "iters", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
     }
     else {
-        h5_attr = H5Aopen( h5_LinesGroup, "iters", H5P_DEFAULT );
+        h5_attr = H5Aopen( f_lset_h5, "iters", H5P_DEFAULT );
     }
 
     H5Awrite( h5_attr, H5T_NATIVE_INT, &iter );
@@ -121,7 +124,7 @@ void save_line( int iter ) {
     h5_dims[0] = 2;
     h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
     sprintf( buf, "S1S2-%i", iter );
-    h5_attr = H5Acreate( h5_LinesGroup, buf, H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
+    h5_attr = H5Acreate( f_lset_h5, buf, H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
     H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, s );
     H5Aclose( h5_attr );
     H5Sclose( h5_dataspace );
@@ -136,8 +139,8 @@ void save_line( int iter ) {
         h5_dims[1] = edgen;
         edges = malloc( sizeof(int) * edgen * 2 );
         for ( i=0; i<edgen; i++ ) {
-            edges[i] = edgex[i];
-            edges[i+edgen] = edgey[i];
+            edges[i] = edgey[i] + HStartCut;
+            edges[i+edgen] = edgex[i] + WStartCut;
         }
 
     }
@@ -145,7 +148,7 @@ void save_line( int iter ) {
     h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
     sprintf( buf, "lines-%i", iter );
     //printf( "save %s\n", buf );
-    h5_dataset = H5Dcreate( h5_LinesGroup, buf, H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+    h5_dataset = H5Dcreate( f_lset_h5, buf, H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
     H5Dwrite( h5_dataset, H5T_NATIVE_INT, h5_dataspace, H5S_ALL, H5P_DEFAULT, edges );
     free( edges );
 
@@ -182,15 +185,29 @@ void init_phi() {
 
 }
 
-#define DIVIDE_EPS 1e-16
-void lset( int mode ) {
+void open_files_for_lset() {
 
+    char buf[100];
+
+    fd_lset_err = myfopen( "w", "%s/lset_err.dat", All.OutputDir);
+    sprintf( buf, "%s/lset_lines.hdf5", All.OutputDir );
+    f_lset_h5 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT  );
+
+}
+
+void close_files_for_lset() {
+    fclose( fd_lset_err );
+    H5Fclose( f_lset_h5  );
+}
+
+#define DIVIDE_EPS 1e-16
+
+void lset() {
     /*
       This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
     */
 
-    put_header(  "lset", mode );
-
+    put_start;
     const int NumPixels = Width * Height;
     const int NumEl = NumPixels;
     const double *fPtr;
@@ -203,24 +220,14 @@ void lset( int mode ) {
     double Mu, Nu, Tol, Lambda1, Lambda2, TimeStep;
     int MaxIters;
 
-    if ( mode == 0 ) {
-        Mu = All.Mu;
-        Nu = All.Nu;
-        Tol = All.Tol;
-        Lambda1 = All.Lambda1;
-        Lambda2 = All.Lambda2;
-        MaxIters = All.MaxIters;
-        TimeStep = All.TimeStep;
-    }
-    else {
-        Mu = All.Mu1;
-        Nu = All.Nu1;
-        Tol = All.Tol1;
-        Lambda1 = All.Lambda11;
-        Lambda2 = All.Lambda21;
-        MaxIters = All.MaxIters1;
-        TimeStep = All.TimeStep1;
-    }
+    Mu = All.Mu;
+    Nu = All.Nu;
+    Tol = All.Tol;
+    Lambda1 = All.Lambda1;
+    Lambda2 = All.Lambda2;
+    MaxIters = All.MaxIters;
+    TimeStep = All.TimeStep;
+
     PhiTol = Tol;
     dt = TimeStep;
     PhiDiffNorm = (Tol > 0) ? Tol*1000 : 1000;
@@ -228,11 +235,10 @@ void lset( int mode ) {
     edgex = malloc( sizeof(int) * Npixs );
     edgey = malloc( sizeof(int) * Npixs );
 
+    open_files_for_lset();
     init_phi();
-    group_finder_init();
 
     get_c1_c2( &c1, &c2 );
-
     for(Iter = 1; Iter <= MaxIters; Iter++)
     {
         PhiPtr = Phi;
@@ -283,30 +289,20 @@ void lset( int mode ) {
 
         lset_find_line();
 
-        if ( mode == 1 ) {
-            fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
-                          Iter, PhiDiffNorm, c1, c2 );
-            save_line( Iter );
-        }
-
-        if ( mode == 0 && ThisTask == 0 ) {
-            fprintf( LsetErrFd, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
-                      Iter, PhiDiffNorm, c1, c2 );
-            save_line( Iter );
-        }
+        fprintf( fd_lset_err, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+                  Iter, PhiDiffNorm, c1, c2 );
+        save_line( Iter );
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
             break;
 
     }
+    close_files_for_lset();
 
-    if ( mode == 0 && ThisTask == 0 )
-        lset_group_finder( mode );
+    lset_group_finder();
 
     free( edgex );
     free( edgey );
     free( Phi );
-    put_end();
-
+    put_end;
 }
-

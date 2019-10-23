@@ -24,20 +24,16 @@
 #define SEP_LEN  50
 
 typedef struct GlobalParams {
-    char InputDir[ MYFILENAME_MAX ],
-         OutputDir[ MYFILENAME_MAX ],
-         PhiDir[ MYFILENAME_MAX ],
-         FileName[ MYFILENAME_MAX ],
-         FileNameList[ MYFILENAME_MAX ];
+    char OutputDir[ MYFILENAME_MAX ],
+         FileName[ MYFILENAME_MAX ];
 
-    int  LogNorm, LogNorm1, MaxIters, MaxIters1, IsSavePhi,
+    int  LogNorm, LogNorm1, MaxIters,
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
-         DataCutting, ParalleLevel, Lset1, PeakCenterFlag,
+         DataCutting, PeakCenterFlag,
          MinEdgeInSecondFinder;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
-            Mu1, Nu1, Tol1, Lambda11, Lambda21, TimeStep1,
             RSigma, FacRSigma, RSigma1, FacRSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd, Beam; 
@@ -50,24 +46,17 @@ extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
               FREQ, SigmaClippingVmin;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
-            ThisTask, NTask, FileNum,
-            Nfof,
+            FileNum,
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
-            HStartCut, HEndCut, WStartCut, WEndCut, CurGroup;
+            HStartCut, HEndCut, WStartCut, WEndCut, CurGroup,
+            *lset_Next_edge, *lset_Head_edge, *lset_Len_edge, lset_Nedge,
+            *lset_Next_reg, *lset_Head_reg, *lset_Len_reg, lset_Nreg;
 
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;
 extern GlobalParams All;
-extern FILE *LogFileFd, *LsetErrFd;
+hid_t h5_fof;
 //extern_end
 
-hid_t   h5_Regs, h5_EdgesRegs, h5_RegsGroup, h5_Lines, h5_LinesGroup, h5_EdgesGroup, h5_Lset0Map,
-        h5_Lset1Map, h5_Lset1Map_after;
-
 extern int *Next, *Head, *Len, *Tail;
-
-#define ZDEBUG
-
-#include "signal_hander.h"
-
