@@ -12,9 +12,15 @@ import sys
 import os
 from astropy.io import fits
 
-fits_file = sys.argv[1]
-output_dir = sys.argv[2]
-Ngroup = int( sys.argv[3] )
+param_file = sys.argv[1]
+Ngroup = int( sys.argv[2] )
+
+ls = open( param_file ).readlines()
+for l in ls:
+    if "FileName" in l:
+        fits_file = l.split()[1]
+    if "OutputDir" in l:
+        output_dir = l.split()[1]
 
 bname = os.path.basename( fits_file )
 fmt = "%-25s : %s"
@@ -24,7 +30,7 @@ print( fmt%("Ngroup", str(Ngroup)) )
 print( fmt%("HillDetect output dir", output_dir) )
 output_dir = "%s/%s"%(output_dir, bname)
 print( fmt%("data output dir", output_dir) )
-plot_output_dir = "%s_plot"%bname
+plot_output_dir = "%s"%bname
 print( fmt%("plot output dir", plot_output_dir) )
 
 if not os.path.exists( plot_output_dir ):
@@ -50,7 +56,6 @@ fits_d = hdu.data[0,0,:,:]
 if Ngroup == 0:
     Ngroup = maps.attrs[ "Ngroup" ]
     print( fmt%("set Ngroup to", str(Ngroup)) )
-
 
 def plot_maps():
 
@@ -82,13 +87,15 @@ def plot_maps():
         img1[img1==img1.min()] =  -1
         ax1.imshow( img1, norm=mplc.LogNorm(), cmap=cm.jet )
 
-        NRegs = fof_regs['/Group%i'%i].attrs[ 'NReg' ]
+        group = fof_regs['/Group%i'%i]
+        NRegs = group.attrs[ 'NReg' ]
         #print( NRegs )
         f = 0
         for j in range(NRegs):
-            r = fof_regs[ '/Group%i/Reg-%i'%(i,j) ][()]
-            c = fof_regs[ '/Group%i'%i ].attrs[ 'Center-%i'%j ]
-            xyerr = fof_regs[ '/Group%i'%i ].attrs[ 'XYerr-%i'%j ]
+            reg = group[ 'Reg%i'%j ]
+            r = reg[ 'region'][()]
+            c = reg.attrs[ 'center' ]
+            xyerr = reg.attrs[ 'xyerr' ]
             x = r[1,:]
             y = r[0,:]
             y = y - crpix[0]
@@ -104,18 +111,6 @@ def plot_maps():
             ax.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
             ax1.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
             f = f + img[ y, x ].sum()
-
-        sig = fof_regs[ '/Group%i'%i ].attrs[ 'Sigma' ]
-        ax.set_title( "%.2e"%sig, fontsize=50 )
-        ax1.set_title( "%.2e"%sig, fontsize=50 )
-
-
-        print( "flux_fof: %.3e,  flux_tot: %.3e, percent: %.2f%%"%(f, img.sum(),\
-        f / img.sum() * 100) )
-        mm, nn = img.shape
-        ax.text( 0.1*nn, 0.1*mm, "%.2f%%"%(f/img.sum()*100), fontsize=60 )
-        ax1.text( 0.1*nn, 0.1*mm, "%.2f%%"%(f/img.sum()*100), fontsize=60 )
-
 
     fig.savefig( '%s/map.png'%plot_output_dir)
     fig1.savefig( '%s/map_after.png'%plot_output_dir )
@@ -139,7 +134,7 @@ def plot_lset():
 
     iters = lset_lines.attrs[ 'iters' ]
     print( "iters: %i"%iters )
-    line = lset_lines[ 'line-%i'%iters ][()]
+    line = lset_lines[ 'iter%i/line'%iters ][()]
     y = line[0,:] - cutstart[0]
     x = line[1,:] - cutstart[1]
     axs[0,1].plot( x, y, 'b.', ms=0.3  )

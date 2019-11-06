@@ -47,7 +47,7 @@ void group_finder() {
 
     N = 0;
     for( i=0; i<Nfof; i++ ) {
-        sprintf( buf, "Reg%i", CurGroup );
+        sprintf( buf, "Reg%i", i );
         h5_gg = H5Gcreate( h5_g, buf, 0 );
 
         p = Head[i];
