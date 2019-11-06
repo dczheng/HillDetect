@@ -167,8 +167,9 @@ def make_protos():
     #exit()
 
     ff = open( 'protos.h', 'w' )
+    ff.write( "#include \"hdf5.h\"\n\n" )
     for f in fs:
-        if '.c' not in f:
+        if f[-2:] != ".c":
             continue
 
         #print( f )

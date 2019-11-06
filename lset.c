@@ -98,38 +98,34 @@ void save_line( int iter ) {
     int i, *edges;
     char buf[20];
     double s[2];
-    hid_t h5_dataset, h5_dataspace, h5_attr;
-    int h5_ndims;
+    hid_t h5_dsp,h5_attr, h5_g;
     hsize_t h5_dims[2]; 
 
 
     get_s1_s2( &s[0], &s[1] );
 
-    h5_dataspace = H5Screate( H5S_SCALAR );
-
+    h5_dsp = H5Screate( H5S_SCALAR );
 
     if ( iter == 1 ) {
-        h5_attr = H5Acreate( f_lset_h5, "iters", H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
+        h5_attr = H5Acreate( 
+                f_lset_h5, "iters", H5T_NATIVE_INT,
+                        h5_dsp, H5P_DEFAULT );
     }
     else {
         h5_attr = H5Aopen( f_lset_h5, "iters", H5P_DEFAULT );
     }
-
     H5Awrite( h5_attr, H5T_NATIVE_INT, &iter );
     H5Aclose( h5_attr );
-    H5Sclose( h5_dataspace );
+    H5Sclose( h5_dsp );
 
 
-    h5_ndims = 1;
+    sprintf( buf, "iter%i", iter );
+    h5_g = H5Gcreate( f_lset_h5, buf, 0 );
+
     h5_dims[0] = 2;
-    h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    sprintf( buf, "S1S2-%i", iter );
-    h5_attr = H5Acreate( f_lset_h5, buf, H5T_NATIVE_DOUBLE, h5_dataspace, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, s );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dataspace );
+    hdf5_write_attr_nd( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "S1S2", s );
 
-    h5_ndims = 2;
+    h5_dims[0] = 2;
     if  ( edgen == 0 ) {
         h5_dims[1] = 1;
         edges = malloc( sizeof(int) * 2 );
@@ -145,15 +141,7 @@ void save_line( int iter ) {
 
     }
 
-    h5_dataspace = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    sprintf( buf, "line-%i", iter );
-    //printf( "save %s\n", buf );
-    h5_dataset = H5Dcreate( f_lset_h5, buf, H5T_NATIVE_INT, h5_dataspace, H5P_DEFAULT );
-    H5Dwrite( h5_dataset, H5T_NATIVE_INT, h5_dataspace, H5S_ALL, H5P_DEFAULT, edges );
-    free( edges );
-
-    H5Dclose( h5_dataset );
-    H5Sclose( h5_dataspace );
+    hdf5_write_data( h5_g, H5T_NATIVE_INT, h5_dims, 2, "line", edges );
 
 }
 

@@ -9,11 +9,13 @@ int *fof_map;
 
 void group_finder() {
 
-    int p, i, xi, yi, xig, yig, *data, index, h5_ndims, j, Nfof;
-    hsize_t h5_dims[2];
-    hid_t h5_dsp, h5_ds, h5_attr, h5_g;
-    double flux_tot, *flux, f, fmax, xyerr[2], c[2], *img, mean, sigma, N, vmin;
+    int p, i, xi, yi, xig, yig, *data, index,
+            j, Nfof, *flag;
+    double flux_tot, *flux, f, fmax, xyerr[2], c[2], *img,
+            mean[2], sigma[2], rms[2], N;
     char buf[100];
+    hsize_t h5_dims[2];
+    hid_t h5_g, h5_gg;
 
     put_start;
     group_finder_init();
@@ -23,7 +25,6 @@ void group_finder() {
         if ( Data[p] > SigmaClippingVmin ) {
            fof_map[p] = 1;
         } 
-
     }
 
     fof();
@@ -34,45 +35,33 @@ void group_finder() {
     }
     Nfof = p;
 
-    sprintf( buf, "Group%i", CurGroup  );
-    h5_g = H5Gcreate( h5_fof, buf, 0  );
-
-
-    h5_dsp = H5Screate( H5S_SCALAR );
-    h5_attr = H5Acreate( h5_g, "NReg", H5T_NATIVE_INT, h5_dsp,
-        H5P_DEFAULT);
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &Nfof );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp  );
+    sprintf( buf, "Group%i", CurGroup );
+    h5_g = H5Gcreate( h5_fof, buf, 0 );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_INT, "NReg", &Nfof );
 
     data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
     img = malloc( sizeof(double) * Npixs );
+    flag = malloc( sizeof(int) * Npixs );
+    memset( flag, 0, sizeof(int) * Npixs );
 
-    vmin = 1e100;
-    for( yi=0; yi<Height; yi++ )
-        for( xi=0; xi<Width; xi++ ) {
-            f = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ] *
-                    fabs( CDELT1*CDELT2 ) / All.Beam;
-            img[yi*Width+xi] = f;
-            if ( f<vmin )
-                vmin = f;
-        }
-
-    N = Npixs;
+    N = 0;
     for( i=0; i<Nfof; i++ ) {
+        sprintf( buf, "Reg%i", CurGroup );
+        h5_gg = H5Gcreate( h5_g, buf, 0 );
+
         p = Head[i];
         index = 0;
         fmax = -1e10;
         c[0] = c[1] = 0;
-        N -= Len[i];
+        N += Len[i];
 
         while( p>=0 ) {
             xi = p % Width;
             yi = p / Width;
             xig = xi + XShift + WStartCut;
             yig = yi + YShift + HStartCut;
-            img[ yi*Width+xi ] = vmin/10;
+            flag[p] = 1;
             data[index] = yig;
             data[index+Len[i]] = xig;
             if  ( index >= Npixs  * 2 || index+Len[i] >= Npixs * 2  ) {
@@ -95,7 +84,7 @@ void group_finder() {
             }
 
             if ( f>fmax )
-                  fmax = f;
+               fmax = f;
 
             flux[index] = f;
             index ++;
@@ -126,98 +115,59 @@ void group_finder() {
         xyerr[0] = sqrt( xyerr[0] / Len[i] );
         xyerr[1] = sqrt( xyerr[1] / Len[i] );
 
-        sprintf( buf, "Center-%i", i );
-        h5_ndims = 1;
         h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_attr = H5Acreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-                H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, c );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
 
-        sprintf( buf, "XYerr-%i", i );
-        h5_ndims = 1;
-        h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_attr = H5Acreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-                H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, xyerr );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        hdf5_write_attr_nd( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "center", c );
 
-        sprintf( buf, "Reg-%i", i );
-        h5_ndims = 2;
+        hdf5_write_attr_nd( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "xyerr", xyerr );
+
         h5_dims[0] = 2;
         h5_dims[1] = Len[i];
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_ds = H5Dcreate( h5_g, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-        H5Dwrite( h5_ds, H5T_NATIVE_INT, h5_dsp, H5S_ALL, H5P_DEFAULT, data );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp  );
+        hdf5_write_data( h5_gg, H5T_NATIVE_INT, h5_dims, 2, "region", data );
 
-        sprintf( buf, "Flux-%i", i );
-        h5_ndims = 1;
         h5_dims[0] = Len[i];
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_ds = H5Dcreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT  );
-        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, flux );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp  );
+        hdf5_write_data( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "flux", flux );
 
-        sprintf( buf, "FluxTot-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR );
-        h5_attr = H5Acreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-            H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &flux_tot );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        hdf5_write_attr_scalar( h5_gg, H5T_NATIVE_DOUBLE, "flux_tot", &flux_tot );
 
-        sprintf( buf, "PeakFlux-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR );
-        h5_attr = H5Acreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-            H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &fmax );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        hdf5_write_attr_scalar( h5_gg, H5T_NATIVE_DOUBLE, "peak_flux", &fmax );
 
-     }
+        H5Gclose( h5_gg );
+    }
 
-     if ( N <= 0)  {
-         printf( "WARNING: no pixs to estimate sigma!\n" );
-         sigma = -1;
-     }
-     else {
-         mean = 0;
-         for( p=0; p<Npixs; p++ ) {
-             if ( img[p]<vmin )
-                 continue;
-             mean += img[p];
-         }
-         mean /= N;
+    for( i=0; i<2; i++ )
+        mean[i] = sigma[i] = rms[i] = 0;
 
-         sigma = 0;
-         for( p=0; p<Npixs; p++ ) {
-             if ( img[p]<vmin )
-                 continue;
-             sigma += SQR(img[p]-mean);
-         }
-         sigma /= N;
-         sigma = sqrt( sigma );
-     }
+    for( p=0; p<Npixs; p++ ){
+        xi = p % Width;
+        yi = p / Width;
+        img[p] = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ] *
+               fabs( CDELT1*CDELT2 ) / All.Beam;
+    }
 
-     sprintf( buf, "Sigma" );
-     h5_dsp = H5Screate( H5S_SCALAR  );
-     h5_attr = H5Acreate( h5_g, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT  );
-     H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &sigma  );
-     H5Aclose( h5_attr );
-     H5Sclose( h5_dsp  );
+
+    get_mean_sigma_rms( img, flag, Npixs, mean, sigma, rms );
+
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "mean_outer", mean );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "mean_inner", mean+1 );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "rms_outer", rms );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "rms_inner", rms+1 );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "sigma_outer", sigma );
+    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "sigma_inner", sigma+1 );
 
     H5Gclose( h5_g  );
 
     free( data );
     free( flux );
+    free( flag );
     free( img );
+
     group_finder_free();
     put_end;
 }
@@ -232,16 +182,16 @@ void group_finder_free() {
     free(fof_map);
 }
 
-
 void lset_group_finder_save() {
 
     put_start;
     char buf[100];
-    int i, p, index, xi, yi, xig, yig, *data, h5_ndims, Xs[2], 
-            xmin, xmax, ymin, ymax, N, j;
-    double mean, sigma, *img, f, fmax, *flux, flux_tot, xyerr[2], c[2], vmin;
+    int i, p, index, xi, yi, xig, yig, *data, Xs[2], 
+            xmin, xmax, ymin, ymax, N, j, *flag, NN;
+    double mean[2], sigma[2], rms[2],
+                *img, f, fmax, *flux, flux_tot, xyerr[2], c[2];
     hsize_t h5_dims[2];
-    hid_t h5_dsp, h5_ds, h5_attr, h5_f;
+    hid_t h5_f, h5_g;
 
     data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
@@ -249,61 +199,36 @@ void lset_group_finder_save() {
     sprintf( buf, "%s/lset_regs.hdf5", All.OutputDir  );
     h5_f = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT  );
 
-    h5_ndims = 1;
     h5_dims[0] = 2;
     Xs[0] = HStartCut;
     Xs[1] = WStartCut;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_f, "CRPIX", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp );
 
+    hdf5_write_attr_nd( h5_f, H5T_NATIVE_INT, h5_dims, 1, "CRPIX", Xs );
+
+    h5_dims[0] = 2;
     Xs[0] = HEndCut-HStartCut;
     Xs[1] = WEndCut-WStartCut;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_f, "NAXIS", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp );
+    hdf5_write_attr_nd( h5_f, H5T_NATIVE_INT, h5_dims, 1, "NAXIS", Xs );
 
-    h5_dsp = H5Screate( H5S_SCALAR );
-    h5_attr = H5Acreate( h5_f, "NReg", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg  );
-    H5Aclose( h5_attr  );
-    H5Sclose( h5_dsp  );
+    hdf5_write_attr_scalar( h5_f, H5T_NATIVE_INT, "NReg", &lset_Nreg );
 
+    h5_dims[0] = 2;
     Xs[0] = HStartCut;
     Xs[1] = WStartCut;
-    h5_ndims = 1;
-    h5_dims[0] = 2;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_f, "CutStart", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
+    hdf5_write_attr_nd( h5_f, H5T_NATIVE_INT, h5_dims, 1, "CutStart", Xs );
 
+    h5_dims[0] = 2;
     Xs[0] = HEndCut;
     Xs[1] = WEndCut;
-    h5_ndims = 1;
-    h5_dims[0] = 2;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_f, "CutEnd", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
+    hdf5_write_attr_nd( h5_f, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
 
     img = malloc( sizeof(double) * Npixs);
-    vmin = 1e100;
-    for( yi=0; yi<Height; yi++ )
-        for( xi=0; xi<Width; xi++ ) {
-         xig = xi + WStartCut;
-         yig = yi + HStartCut;
-         f = DataRaw[ yig * Width + xig ] * 
-                    fabs( CDELT1*CDELT2 ) / All.Beam;
-         if ( f<vmin )
-             vmin = f;
-    }
+    flag = malloc( sizeof(int) * Npixs);
 
     for( i=0; i<lset_Nreg; i++ ) {
+
+        sprintf( buf, "Reg%i", i );
+        h5_g = H5Gcreate( h5_f, buf, 0 );
 
         p = lset_Head[i];
         index = 0;
@@ -321,11 +246,10 @@ void lset_group_finder_save() {
             data[index] = yig;
             data[index+lset_Len[i]] = xig;
 
-            f = DataRaw[ yig * Width + xig ] * 
+            f = DataRaw[ yi * Width + xi ] * 
                     fabs( CDELT1*CDELT2 ) / All.Beam;
 
             flux[index] = f;
-
 
             if ( All.PeakCenterFlag ) {
                 if ( f>fmax ) {
@@ -340,7 +264,6 @@ void lset_group_finder_save() {
 
             if ( f>fmax )
                   fmax = f;
-            //printf( "%i %i %i %i, %g\n", xig, yig, c[0], c[1], f );
 
             index ++;
 
@@ -351,6 +274,7 @@ void lset_group_finder_save() {
             p = lset_Next[p];
         }
 
+
         for( j=0,flux_tot=0; j<lset_Len[i]; j++ ) {
             flux_tot += flux[j];
         }
@@ -359,7 +283,6 @@ void lset_group_finder_save() {
             c[0] /= flux_tot;
             c[1] /= flux_tot;
         }
-        //printf( "%i, %i\n", c[0], c[1] );
 
         p = lset_Head[i];
         xyerr[0] = xyerr[1] = 0;
@@ -370,138 +293,69 @@ void lset_group_finder_save() {
             yig = yi + HStartCut;
             xyerr[0] += SQR( yig-c[0] );
             xyerr[1] += SQR( xig-c[1] );
-            //printf( "%i %i %g %g\n", yig, xig, c[0], c[1] );
             p = lset_Next[p];
         }
 
         xyerr[0] = sqrt( xyerr[0] / lset_Len[i] );
         xyerr[1] = sqrt( xyerr[1] / lset_Len[i] );
-        //printf( "%g %g\n", xyerr[0], xyerr[1] );
 
-        N = (xmax-xmin+1)*(ymax-ymin+1) - lset_Len[i];
-        if ( N <= 0)  {
-            printf( "WARNING: no pixs to estimate sigma!\n" );
-            sigma = -1;
-        }
-        else {
-            memset( img, 0, sizeof(double)*Npixs );
-            for( yi=ymin; yi<=ymax; yi++ )
-                for( xi=xmin; xi<=xmax; xi++ ) {
-                    img[yi*Width+xi] = DataRaw[yi*Width+xi] * 
-                                    fabs( CDELT1*CDELT2 ) / All.Beam;
-                }
+        N = xmax-xmin+1;
+        NN = N * (ymax-ymin+1);
 
-            p = lset_Head[i];
-            while( p>=0 ) {
-                xi = p % Width;
-                yi = p / Width;
-                img[yi*Width+xi] =  vmin/10;
-                p = lset_Next[p];
+        for( yi=ymin; yi<=ymax; yi++ ) {
+            for( xi=xmin; xi<=xmax; xi++ )
+                img[ yi*N + xi ] = DataRaw[ yi * Width + xi ] * 
+                    fabs( CDELT1*CDELT2 ) / All.Beam;
             }
 
-            mean = 0;
-            for( yi=ymin; yi<=ymax; yi++ )
-                for( xi=xmin; xi<=xmax; xi++ ) {
-                    if ( img[yi*Width+xi] < vmin )
-                        continue;
-                    mean += img[yi*Width+xi];
-                }
-    
-            mean /= N;
-            sigma = 0;
-            for( yi=ymin; yi<=ymax; yi++ )
-                for( xi=xmin; xi<=xmax; xi++ ) {
-                    if ( img[yi*Width+xi] < vmin )
-                        continue;
-                    sigma += SQR(img[yi*Width+xi]-mean);
-                }
-    
-            sigma /=  N;
-            //printf( "mean: %g, sigma: %g\n", mean, sigma );
-
-            if ( sigma<0 ) {
-                printf( "%i %i %i %i %i\n",
-                    xmin+WStartCut,
-                    xmax+WStartCut,
-                    ymin+HStartCut,
-                    ymax+HStartCut,
-                    lset_Len[i]
-                    );
-                printf( "%g ", sigma );
-    
-                endrun( "error" );
-            }
-            sigma = sqrt(sigma);
+        memset( flag, 0, sizeof(int) * NN);
+        p = lset_Head[i];
+        while( p>=0 ) {
+            xi = p % Width;
+            yi = p / Width;
+            flag[ (yi-ymin)*N + (xi-xmin) ] = 1;
+            p = lset_Next[p];
         }
 
-        sprintf( buf, "Center-%i", i );
-        h5_ndims = 1;
-        h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-                H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, c );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
 
-        sprintf( buf, "XYerr-%i", i );
-        h5_ndims = 1;
-        h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-                H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, xyerr );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        get_mean_sigma_rms( img, flag, NN, mean, sigma, rms );
 
-        sprintf( buf, "Flux-%i", i );
-        h5_ndims = 1;
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "mean_outer", mean );
+
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "mean_inner", mean+1 );
+
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "rms_outer", rms );
+
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "rms_inner", rms+1 );
+
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "sigma_outer", sigma );
+
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+                        "sigma_inner", sigma+1 );
+
+        h5_dims[0] = 2;
+        hdf5_write_attr_nd( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "center", c );
+
+        h5_dims[0] = 2;
+        hdf5_write_attr_nd( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "xyerr", xyerr );
+
         h5_dims[0] = lset_Len[i];
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL  );
-        h5_ds = H5Dcreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT  );
-        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, flux );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp  );
+        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "flux", flux );
 
-        sprintf( buf, "FluxTot-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-            H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &flux_tot );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE, "flux_tot", &flux_tot );
 
-        sprintf( buf, "PeakFlux-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp,
-            H5P_DEFAULT);
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &fmax );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE, "peak_flux", &fmax );
 
-        h5_ndims = 2;
         h5_dims[0] = 2;
         h5_dims[1] = lset_Len[i];
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL   );
-        sprintf( buf, "Reg-%i", i );
-        h5_ds = H5Dcreate( h5_f, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-        H5Dwrite( h5_ds, H5T_NATIVE_INT, h5_dsp, H5S_ALL, H5P_DEFAULT, data );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp  );
+        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "region", data );
 
-        sprintf( buf, "Sigma-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR  );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT  );
-        H5Awrite( h5_attr, H5T_NATIVE_DOUBLE, &sigma  );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
-
-        sprintf( buf, "Sigma-Npixs-%i", i );
-        h5_dsp = H5Screate( H5S_SCALAR  );
-        h5_attr = H5Acreate( h5_f, buf, H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT  );
-        H5Awrite( h5_attr, H5T_NATIVE_INT, &N  );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp  );
+        H5Gclose( h5_g );
 
      }
 
@@ -510,6 +364,7 @@ void lset_group_finder_save() {
      free(data);
      free(flux);
      free(img);
+     free(flag);
      put_end;
 
 }
@@ -565,7 +420,9 @@ void lset_group_finder() {
             x = p % Width;
             y = p / Width;
             p = lset_Next[p];
-            if ( x == 0 || y == 0 || x == Width-1 || y == Height-1 ) {
+            if ( x == 0 || y == 0 ||
+                 x == Width-1 || y == Height-1
+                 ) {
                 flag = 1;
                 break;
             }

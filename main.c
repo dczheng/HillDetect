@@ -27,9 +27,7 @@ void run_first_finder() {
 void open_files_for_second_finder() {
 
     char buf[100];
-    hid_t h5_dsp, h5_attr;
     int Xs[2];
-    int h5_ndims;
     hsize_t h5_dims[2];
 
 
@@ -41,44 +39,23 @@ void open_files_for_second_finder() {
 
     Xs[0] = HStartCut;
     Xs[1] = WStartCut;
-    h5_ndims = 1;
     h5_dims[0] = 2;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_map, "CutStart", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map_after, "CutStart", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp );
+    hdf5_write_attr_nd( h5_map, H5T_NATIVE_INT, h5_dims, 1, "CutStart", Xs );
+    hdf5_write_attr_nd( h5_map_after, H5T_NATIVE_INT, h5_dims, 1, "CutStart", Xs );
 
     Xs[0] = HEndCut;
     Xs[1] = WEndCut;
-    h5_ndims = 1;
     h5_dims[0] = 2;
-    h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-    h5_attr = H5Acreate( h5_map, "CutEnd", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map_after, "CutEnd", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp );
+    hdf5_write_attr_nd( h5_map, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
+    hdf5_write_attr_nd( h5_map_after, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
+
 
     sprintf( buf,"%s/fof_regs.hdf5", All.OutputDir );
     h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
- 
-    h5_dsp = H5Screate( H5S_SCALAR );
-    h5_attr = H5Acreate( h5_fof, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
-    H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
-    H5Aclose( h5_attr );
-    h5_attr = H5Acreate( h5_map_after, "Ngroup", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-    H5Awrite( h5_attr, H5T_NATIVE_INT, &lset_Nreg );
-    H5Aclose( h5_attr );
-    H5Sclose( h5_dsp );
+
+    hdf5_write_attr_scalar( h5_map, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
+    hdf5_write_attr_scalar( h5_map_after, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
+    hdf5_write_attr_scalar( h5_fof, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
  
 }
 
@@ -91,8 +68,7 @@ void close_files_for_second_finder() {
 void run_second_finder() {
 
     char buf[100];
-    hid_t h5_ds, h5_dsp, h5_group, h5_attr;
-    int h5_ndims;
+    hid_t h5_g;
     hsize_t h5_dims[2];
 
     int i, p, j, k, Xs[2],
@@ -143,52 +119,32 @@ void run_second_finder() {
         }
 
         sprintf( buf, "Group%i", k );
-        h5_group = H5Gcreate( h5_map, buf, 0 );
+        h5_g = H5Gcreate( h5_map, buf, 0 );
 
         Xs[0] = ymin+HStartCut;
         Xs[1] = xmin+WStartCut;
-        h5_ndims = 1;
         h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_attr = H5Acreate( h5_group, "CRPIX", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp );
+        hdf5_write_attr_nd( h5_g, H5T_NATIVE_INT, h5_dims, 1, "CRPIX", Xs );
 
-        h5_ndims = 2;
         h5_dims[0] = Height;
         h5_dims[1] = Width;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_ds = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
-        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, Data );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp );
-        H5Gclose( h5_group );
+        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "map", Data );
+
+        H5Gclose( h5_g );
 
         pre_proc(1);
 
         sprintf( buf, "Group%i", k );
-        h5_group = H5Gcreate( h5_map_after, buf, 0 );
+        h5_g = H5Gcreate( h5_map_after, buf, 0 );
 
         Xs[0] = ymin+HStartCut;
         Xs[1] = xmin+WStartCut;
-        h5_ndims = 1;
         h5_dims[0] = 2;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_attr = H5Acreate( h5_group, "CRPIX", H5T_NATIVE_INT, h5_dsp, H5P_DEFAULT );
-        H5Awrite( h5_attr, H5T_NATIVE_INT, Xs );
-        H5Aclose( h5_attr );
-        H5Sclose( h5_dsp );
+        hdf5_write_attr_nd( h5_g, H5T_NATIVE_INT, h5_dims, 1, "CRPIX", Xs );
 
-        h5_ndims = 2;
         h5_dims[0] = Height;
         h5_dims[1] = Width;
-        h5_dsp = H5Screate_simple( h5_ndims, h5_dims, NULL );
-        h5_ds = H5Dcreate( h5_group, "map", H5T_NATIVE_DOUBLE, h5_dsp, H5P_DEFAULT );
-        H5Dwrite( h5_ds, H5T_NATIVE_DOUBLE, h5_dsp, H5S_ALL, H5P_DEFAULT, Data );
-        H5Dclose( h5_ds );
-        H5Sclose( h5_dsp );
-        H5Gclose( h5_group );
+        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "map", Data );
 
         group_finder();
 
