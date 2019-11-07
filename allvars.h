@@ -30,7 +30,6 @@ typedef struct GlobalParams {
     int  LogNorm, MaxIters,
          SigmaClipping,
          SigmaClipping1,
-         FTClipping,
          DataCutting, PeakCenterFlag,
          LsetPixMin, SecondFinderPixMin,
          DisableSecondFinder, SecondFinderPad;
