@@ -18,7 +18,6 @@ protos.h
 *txt*
 *csv*
 *osm
-*.in
 case/
 aegean_test/
 HillDetect
