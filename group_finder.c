@@ -35,6 +35,15 @@ void group_finder() {
     }
 
     Nfof = p;
+
+/*
+    if ( Nfof == 0 ) {
+        group_finder_free();
+        put_end;
+        return;
+    }
+*/
+
     printf( "Second fof, Nfof: %i\n", Nfof );
 
     sprintf( buf, "Group%i", CurGroup );
