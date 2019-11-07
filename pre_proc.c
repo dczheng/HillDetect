@@ -4,7 +4,6 @@
 */
 
 #include "allvars.h"
-#include "drfftw.h"
 
 double RSigma;
 int LogNorm;
@@ -15,13 +14,13 @@ void sigma_clipping( double sigma, double mu ) {
 
     vmin = 1e100;
     for ( i=0; i<Npixs; i++ ) {
-        if ( isnan( Data[i] || Data[i]<=0 ) )
+        if ( isnan( Data[i] )|| Data[i]<=0 )
             continue;
         vmin = ( vmin < Data[i] ) ? vmin : Data[i];
     }
 
     for( i=0; i<Npixs; i++ )
-        if ( isnan( Data[i] || Data[i] <=0 ) )
+        if ( isnan( Data[i] ) || Data[i] <=0 )
             Data[i] = vmin;
 
     if ( sigma == 0 ) {

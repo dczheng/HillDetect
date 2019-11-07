@@ -26,7 +26,7 @@ void run_first_finder() {
 
 void open_files_for_second_finder() {
 
-    char buf[100];
+    char buf[120];
     int Xs[2];
     hsize_t h5_dims[2];
 

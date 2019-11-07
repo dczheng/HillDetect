@@ -13,7 +13,7 @@ void group_finder() {
             j, Nfof, *flag;
     double flux_tot, *flux, f, fmax, xyerr[2], c[2], *img,
             mean[2], sigma[2], rms[2], N;
-    char buf[100];
+    char buf[120];
     hsize_t h5_dims[2];
     hid_t h5_g, h5_gg;
 
@@ -196,7 +196,7 @@ void group_finder_free() {
 void lset_group_finder_save() {
 
     put_start;
-    char buf[100];
+    char buf[120];
     int i, p, index, xi, yi, xig, yig, *data, Xs[2], 
             xmin, xmax, ymin, ymax, N, j, *flag, NN, t;
     double mean[2], sigma[2], rms[2],

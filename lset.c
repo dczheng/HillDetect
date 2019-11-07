@@ -175,7 +175,7 @@ void init_phi() {
 
 void open_files_for_lset() {
 
-    char buf[100];
+    char buf[120];
 
     fd_lset_err = myfopen( "w", "%s/lset_err.dat", All.OutputDir);
     sprintf( buf, "%s/lset_lines.hdf5", All.OutputDir );
