@@ -6,7 +6,7 @@ HDF5_OPTS  = -DH5_USE_16_API
 HDF5_LIBS  = -lhdf5
 
 FFTW_INCL  = 
-FFTW_LIBS  = -ldrfftw -ldfftw
+FFTW_LIBS  =
 
 PYTHON    ?= $(shell which python3)
 

@@ -190,6 +190,7 @@ void run() {
 
 int main( int argc, char **argv ) {
 
+    char buf[120];
     memset( sep_str, '-', SEP_LEN-2 );
     sep_str[ SEP_LEN-2 ] = '\n';
     sep_str[ SEP_LEN-1 ] = '\0';
@@ -199,8 +200,9 @@ int main( int argc, char **argv ) {
     read_parameters( argv[1] );
     InputBaseName = basename( All.FileName );
     create_dir( All.OutputDir );
-    sprintf( All.OutputDir, "%s/%s", All.OutputDir, InputBaseName );
-    create_dir( All.OutputDir );
+    sprintf( buf, "%s/%s", All.OutputDir, InputBaseName );
+    sprintf( All.OutputDir, "%s", buf );
+    create_dir(buf);
 
     run();
 

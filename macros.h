@@ -1,10 +1,10 @@
 #define SQR(X)  ( (X)*(X) )
 
-#define myfopen( opt, fmt, ... ) ({\
-    char fopenbuf[100];\
+#define myfopen( opt, _fmt, ... ) ({\
+    char fopenbuf[120];\
     FILE *fd;\
     do {\
-        sprintf( fopenbuf, fmt, ##__VA_ARGS__ );\
+        sprintf( fopenbuf, _fmt, ##__VA_ARGS__ );\
         fd = fopen( fopenbuf, opt );\
         if ( NULL == fd ) {\
             printf( "can not open `%s`.\n", fopenbuf );\
@@ -14,14 +14,14 @@
     fd;\
 })
 
-#define create_dir( fmt, ... ) {\
-    char buf[100];\
-    sprintf( buf, fmt, ##__VA_ARGS__ );\
-    create_dir0( buf );\
+#define create_dir( _fmt, ... ) {\
+    char _buf[150];\
+    sprintf( _buf, _fmt, ##__VA_ARGS__ );\
+    create_dir0( _buf );\
 }
 
-#define endrun0( fmt, ... ) {\
-    fprintf( stderr, fmt, ##__VA_ARGS__ ); \
+#define endrun0( _fmt, ... ) {\
+    fprintf( stderr, _fmt, ##__VA_ARGS__ ); \
     fprintf( stderr, "END IN: ( %s %s %i )\n" , __FILE__, __FUNCTION__, __LINE__ ); \
     exit( 0 ); \
 }
