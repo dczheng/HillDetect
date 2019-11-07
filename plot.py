@@ -160,8 +160,9 @@ def plot_lset():
             reg = g[ 'Reg%i'%j ]
             xy = reg[ 'region' ]
             #axs[1,1].plot( xy[1,:], xy[0,:] )
-            for k in range(len(xy[0,:])):
-                fits_mask[ xy[0, k], xy[1, k] ] = 0
+            fits_mask[ xy[0,:], xy[1,:] ] = 0
+            #for k in range(len(xy[0,:])):
+            #    fits_mask[ xy[0, k], xy[1, k] ] = 0
 
     #print( fits_mask.max(), fits_mask.min(), len(fits_mask[fits_mask>0]) )
     img = axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
