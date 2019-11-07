@@ -10,10 +10,11 @@ int *fof_map;
 void get_mean_sigma_rms( double *data, int *flag, int N,
                      double *mean, double *sigma, double *rms ) {
     int i, flags, *flag_n;
+
+    //put_start;
     flag_n = malloc( sizeof(int) * N );
     memset( flag_n, 0, sizeof(int) * N );
 
-    //put_start;
     flags = 0;
     for( i=0; i<N; i++ ) {
         flag_n[flag[i]]++;

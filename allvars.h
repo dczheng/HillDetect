@@ -27,14 +27,15 @@ typedef struct GlobalParams {
     char OutputDir[ MYFILENAME_MAX ],
          FileName[ MYFILENAME_MAX ];
 
-    int  LogNorm, LogNorm1, MaxIters,
+    int  LogNorm, MaxIters,
          SigmaClipping,
          SigmaClipping1,
          FTClipping,
          DataCutting, PeakCenterFlag,
-         MinReg, DisableSecondFinder;
+         LsetPixMin, SecondFinderPixMin,
+         DisableSecondFinder, SecondFinderPad;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
-            RSigma, FacRSigma, RSigma1, FacRSigma1,
+            RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd, Beam; 
 

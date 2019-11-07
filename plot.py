@@ -17,9 +17,9 @@ Ngroup = int( sys.argv[2] )
 
 ls = open( param_file ).readlines()
 for l in ls:
-    if "FileName" in l:
+    if "FileName" in l and l[0] != '%':
         fits_file = l.split()[1]
-    if "OutputDir" in l:
+    if "OutputDir" in l and l[0] != '%':
         output_dir = l.split()[1]
 
 bname = os.path.basename( fits_file )
@@ -140,6 +140,7 @@ def plot_lset():
     axs[0,1].plot( x, y, 'b.', ms=0.3  )
 
     img = np.zeros( fits_dd.shape )
+    global Ngroup
     for i in range(Ngroup):
         g = maps[ '/Group%i'%i ]
         m0, n0 = g.attrs[ 'CRPIX' ]
@@ -151,15 +152,20 @@ def plot_lset():
     axs[1,0].imshow( img, norm=norm, cmap=cm.jet )
 
     fits_mask = fits_d.copy()
-    NN = maps.attrs['Ngroup']
-    for i in range(NN):
-        g = maps[ '/Group%i'%i ]
-        m0, n0 = g.attrs[ 'CRPIX' ]
-        mm = g[ 'map' ]
-        m, n = mm.shape
-        fits_mask[m0:m0+m, n0:n0+n] = -1 
+    NN = fof_regs.attrs['Ngroup']
+    for i in range( NN ):
+        g = fof_regs[ 'Group%i'%i ]
+        Nreg = g.attrs[ 'NReg' ]
+        for j in range( Nreg ):
+            reg = g[ 'Reg%i'%j ]
+            xy = reg[ 'region' ]
+            #axs[1,1].plot( xy[1,:], xy[0,:] )
+            for k in range(len(xy[0,:])):
+                fits_mask[ xy[0, k], xy[1, k] ] = 0
 
-    axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
+    #print( fits_mask.max(), fits_mask.min(), len(fits_mask[fits_mask>0]) )
+    img = axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
+    #plt.colorbar( img, ax=axs[1,1] )
 
     fig.savefig( '%s/lset.png'%plot_output_dir,dpi=300 )
     fits.writeto( '%s/%s_mask.fits'%(plot_output_dir, bname[:-5]),\

@@ -100,20 +100,32 @@ void run_second_finder() {
                  ymin + HStartCut,
                  xmax + WStartCut,
                  ymax + HStartCut );
-        
+        ymin -= All.SecondFinderPad;
+        if ( ymin<=0 )
+            ymin = 0;
+        ymax += All.SecondFinderPad; 
+        if ( ymax > HeightGlobal-1 )
+            ymax = HeightGlobal-1;
 
-        h = ymax - ymin;
-        w = xmax - xmin;
+        xmin -= All.SecondFinderPad;
+        if ( xmin<=0 )
+            xmin = 0;
+        xmax += All.SecondFinderPad; 
+        if ( xmax > WidthGlobal-1 )
+            xmax = WidthGlobal-1;
+
+        h = ymax - ymin + 1;
+        w = xmax - xmin + 1;
 
         XShift = xmin;
         YShift = ymin;
 
         Width = w;
         Height = h;
-        Npixs = w * h;
+        Npixs = w*h;
 
-        for( i=ymin; i<ymax; i++ ) {
-            for( j=xmin; j<xmax; j++ ) {
+        for( i=ymin; i<=ymax; i++ ) {
+            for( j=xmin; j<=xmax; j++ ) {
                 Data[(i-ymin)*w+(j-xmin)] = DataRaw[i*WidthGlobal+j];
             }
         }
@@ -147,8 +159,6 @@ void run_second_finder() {
         hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "map", Data );
 
         group_finder();
-
-
     }
 
     close_files_for_second_finder();

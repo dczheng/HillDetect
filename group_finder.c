@@ -22,7 +22,7 @@ void group_finder() {
 
     for( p=0; p<Npixs; p++ ) {
         fof_map[p] = 0;
-        if ( Data[p] > SigmaClippingVmin ) {
+        if ( Data[p] > SigmaClippingVmin && Data[p] > 0 ) {
            fof_map[p] = 1;
         } 
     }
@@ -30,10 +30,12 @@ void group_finder() {
     fof();
 
     for( p=0; p<Npixs; p++ ) {
-        if ( Len[p] == 1 )
+        if ( Len[p] < All.SecondFinderPixMin )
             break;
     }
+
     Nfof = p;
+    printf( "Second fof, Nfof: %i\n", Nfof );
 
     sprintf( buf, "Group%i", CurGroup );
     h5_g = H5Gcreate( h5_fof, buf, 0 );
@@ -442,10 +444,10 @@ void lset_group_finder() {
     printf( "Nreg [remove edge]: %i\n", lset_Nreg );
 
     for (i=0; i<lset_Nreg; i++)
-        if ( lset_Len[i] < All.MinReg )
+        if ( lset_Len[i] < All.LsetPixMin )
             break;
     lset_Nreg = i;
-    printf( "Nreg [>%i]: %i\n", All.MinReg, lset_Nreg );
+    printf( "Nreg [>%i]: %i\n", All.LsetPixMin, lset_Nreg );
 
     lset_group_finder_save();
 

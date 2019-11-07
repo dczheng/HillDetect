@@ -6,56 +6,34 @@
 #include "allvars.h"
 #include "drfftw.h"
 
-double RSigma, FacRSigma;
+double RSigma;
 int LogNorm;
-void sigma_clipping() {
+void sigma_clipping( double sigma, double mu ) {
 
     int i;
-    double sigma, mu, vmin;
-#define SET_NAN_TO_VMIN
+    double vmin;
 
-#ifdef SET_NAN_TO_VMIN
     vmin = 1e100;
     for ( i=0; i<Npixs; i++ ) {
-        if ( isnan( Data[i] ) )
+        if ( isnan( Data[i] || Data[i]<=0 ) )
             continue;
         vmin = ( vmin < Data[i] ) ? vmin : Data[i];
     }
-#endif
 
-    for( i=0, mu=0; i<Npixs; i++ ) {
-        if ( isnan( Data[i] ) )
-#ifdef SET_NAN_TO_VMIN
-            Data[i] = vmin;
-#else
-            Data[i] = 0;
-#endif
-        mu += Data[i];
-    }
-
-    mu /= Npixs;
-
-    for( i=0, sigma=0; i<Npixs; i++ ) {
-        sigma += SQR( Data[i] - mu );
-    }
-    sigma = sqrt( sigma / Npixs );
-
-    vmin = 1e100;
     for( i=0; i<Npixs; i++ )
-        if ( Data[i]<vmin )
-            vmin = Data[i];
-    
-    if ( mu+RSigma*sigma <= vmin ) {
-        printf( "[Group: %i] mu: %g, sigma: %g \nRSigma: %f, vmin: %g,"
-                "mu+RSigma*sigma: %g\n",
-        CurGroup, mu, sigma, RSigma, vmin,
-        mu+RSigma*sigma );
-        printf( "chage RSigma:\n" );
-    }
+        if ( isnan( Data[i] || Data[i] <=0 ) )
+            Data[i] = vmin;
 
-    while(mu + RSigma * sigma <= vmin){
-        RSigma /= FacRSigma;
-        printf( "RSigma: %g\n", RSigma );
+    if ( sigma == 0 ) {
+        for( i=0,mu=0; i<Npixs; i++ )
+            mu += Data[i];
+        mu /= Npixs;
+
+        for( i=0, sigma=0; i<Npixs; i++ ) {
+            sigma += SQR( Data[i] - mu );
+        }
+
+        sigma = sqrt( sigma / Npixs );
     }
 
     vmin = mu + RSigma * sigma;
@@ -235,16 +213,13 @@ void ft_clipping( int mode ){
 void pre_proc( int mode ) {
     
     put_start;
-/*
-    if ( All.FTClipping )
-        ft_clipping( mode );
-*/
+    double sigma[2], mean[2], rms[2];
+    int *flag, xi, yi, p;
 
     if ( mode==0 ) {
         if ( All.SigmaClipping ) {
             RSigma = All.RSigma;
-            FacRSigma = All.FacRSigma;
-            sigma_clipping();
+            sigma_clipping(0, 0);
         }
 
         if ( All.DataCutting )
@@ -257,11 +232,30 @@ void pre_proc( int mode ) {
 
     if ( mode==1) {
         if ( All.SigmaClipping1 ) {
+            flag = malloc( sizeof(int)*Npixs );
+            memset( flag, 0, sizeof(int)*Npixs );
+            p = lset_Head[CurGroup];
+            while( p>=0 ) {
+                xi = p % WidthGlobal-XShift;
+                yi = p / WidthGlobal-YShift;
+                /*
+                printf( "%i %i [%i] Npixs: %i, Width: %i, Height: %i\n",
+                    xi, yi, p, Npixs, Width, Height );
+                */
+                if ( xi < 0 || xi >= Width || yi < 0 || yi >= Height  )
+                    endrun( "" );
+
+                flag[ yi*Width+xi ] = 1;
+                p = lset_Next[p];
+            }
+            printf( "NPixs: %i, Npixs[inner]: %i, NPixs[outer]: %i\n",
+                Npixs, lset_Len[CurGroup],
+                Npixs-lset_Len[CurGroup] );
+            get_mean_sigma_rms( Data, flag, Npixs,  mean, sigma, rms );
+            free( flag );
             RSigma = All.RSigma1;
-            FacRSigma = All.FacRSigma1;
-            sigma_clipping();
+            sigma_clipping( sigma[0], mean[0]);
         }
     }
     put_end;
-
 }
