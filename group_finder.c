@@ -187,11 +187,11 @@ void lset_group_finder_save() {
     put_start;
     char buf[100];
     int i, p, index, xi, yi, xig, yig, *data, Xs[2], 
-            xmin, xmax, ymin, ymax, N, j, *flag, NN;
+            xmin, xmax, ymin, ymax, N, j, *flag, NN, t;
     double mean[2], sigma[2], rms[2],
                 *img, f, fmax, *flux, flux_tot, xyerr[2], c[2];
     hsize_t h5_dims[2];
-    hid_t h5_f, h5_g;
+    hid_t h5_f, h5_g, h5_gg;
 
     data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
@@ -210,7 +210,7 @@ void lset_group_finder_save() {
     Xs[1] = WEndCut-WStartCut;
     hdf5_write_attr_nd( h5_f, H5T_NATIVE_INT, h5_dims, 1, "NAXIS", Xs );
 
-    hdf5_write_attr_scalar( h5_f, H5T_NATIVE_INT, "NReg", &lset_Nreg );
+    hdf5_write_attr_scalar( h5_f, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
 
     h5_dims[0] = 2;
     Xs[0] = HStartCut;
@@ -227,8 +227,11 @@ void lset_group_finder_save() {
 
     for( i=0; i<lset_Nreg; i++ ) {
 
-        sprintf( buf, "Reg%i", i );
+        sprintf( buf, "Group%i", i );
         h5_g = H5Gcreate( h5_f, buf, 0 );
+        t = 1;
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_INT, "NReg", &t );
+        h5_gg = H5Gcreate( h5_g, "Reg0", 0 );
 
         p = lset_Head[i];
         index = 0;
@@ -339,23 +342,24 @@ void lset_group_finder_save() {
                         "sigma_inner", sigma+1 );
 
         h5_dims[0] = 2;
-        hdf5_write_attr_nd( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "center", c );
+        hdf5_write_attr_nd( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "center", c );
 
         h5_dims[0] = 2;
-        hdf5_write_attr_nd( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "xyerr", xyerr );
+        hdf5_write_attr_nd( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "xyerr", xyerr );
 
         h5_dims[0] = lset_Len[i];
-        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 1, "flux", flux );
+        hdf5_write_data( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 1, "flux", flux );
 
-        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE, "flux_tot", &flux_tot );
+        hdf5_write_attr_scalar( h5_gg, H5T_NATIVE_DOUBLE, "flux_tot", &flux_tot );
 
-        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE, "peak_flux", &fmax );
+        hdf5_write_attr_scalar( h5_gg, H5T_NATIVE_DOUBLE, "peak_flux", &fmax );
 
         h5_dims[0] = 2;
         h5_dims[1] = lset_Len[i];
-        hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "region", data );
+        hdf5_write_data( h5_gg, H5T_NATIVE_DOUBLE, h5_dims, 2, "region", data );
 
         H5Gclose( h5_g );
+        H5Gclose( h5_gg );
 
      }
 
