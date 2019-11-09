@@ -7,13 +7,13 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./fits/test.fits
+FileName                       ./fits/test_mask.fits
 OutputDir                      ./outputs
 
 
 SigmaClipping                 1 
 SigmaClipping1                1
-RSigma                        0.001 
+RSigma                        0.1 
 RSigma1                       2.5 
 
 DataCutting                   1

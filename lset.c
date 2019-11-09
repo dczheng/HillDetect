@@ -277,14 +277,19 @@ void lset() {
 
         lset_find_line();
 
-        fprintf( fd_lset_err, "[%i]  Delta: %e\nc1: %e, c2: %e\n",
+        fprintf( fd_lset_err, "[%5i]  Delta: %e, c1: %e, c2: %e\n",
                   Iter, PhiDiffNorm, c1, c2 );
+        printf( "\r[%5i]  Delta: %e, c1: %e, c2: %e",
+                  Iter, PhiDiffNorm, c1, c2 );
+        fflush( stdout );
+       fflush( fd_lset_err );
         save_line( Iter );
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
             break;
 
     }
+    printf( "\n" ); 
     close_files_for_lset();
 
     lset_group_finder();

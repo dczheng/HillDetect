@@ -51,7 +51,7 @@ maps, maps_after, fof_regs, lset_regs, lset_lines = h5_fs
 
 hdu = fits.open( fits_file )[0]
 fits_h = hdu.header
-fits_d = hdu.data[0,0,:,:]
+fits_d = hdu.data
 
 if Ngroup == 0:
     Ngroup = maps.attrs[ "Ngroup" ]
@@ -117,7 +117,7 @@ def plot_maps():
 
 def plot_lset():
     
-    print( "plot lset ..." )
+    print( "plot lset and make mask ..." )
 
     fig, axs = plt.subplots( 2,2, figsize=(2*5, 2*5) )
     cutstart = maps.attrs[ 'CutStart' ]
@@ -153,26 +153,27 @@ def plot_lset():
 
     fits_mask = fits_d.copy()
     NN = fof_regs.attrs['Ngroup']
+    Ntot = 0
     for i in range( NN ):
         g = fof_regs[ 'Group%i'%i ]
         Nreg = g.attrs[ 'NReg' ]
+        Ntot += Nreg
         for j in range( Nreg ):
             reg = g[ 'Reg%i'%j ]
             xy = reg[ 'region' ]
-            #axs[1,1].plot( xy[1,:], xy[0,:] )
-            fits_mask[ xy[0,:], xy[1,:] ] = 0
-            #for k in range(len(xy[0,:])):
-            #    fits_mask[ xy[0, k], xy[1, k] ] = 0
+            fits_mask[ xy[0,:], xy[1,:] ] = fits_d.min() 
+
+    print( "Ngroup: %i Ntot: %i"%(NN, Ntot) )
 
     #print( fits_mask.max(), fits_mask.min(), len(fits_mask[fits_mask>0]) )
     img = axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
     #plt.colorbar( img, ax=axs[1,1] )
 
     fig.savefig( '%s/lset.png'%plot_output_dir,dpi=300 )
-    fits.writeto( '%s/%s_mask.fits'%(plot_output_dir, bname[:-5]),\
+    fits.writeto( '%s_mask.fits'%(fits_file[:-5]),\
                 data=fits_mask, header=fits_h, overwrite=True )
 
-plot_maps()
+#plot_maps()
 plot_lset()
 
 for f in h5_fs:

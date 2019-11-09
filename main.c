@@ -95,9 +95,7 @@ void run_second_finder() {
 
         printf( "group %05i [%05i] "
                 "region: (%i, %i) - (%i, %i)\n",
-                 k, lset_Len[k],
-                 xmin + WStartCut,
-                 ymin + HStartCut,
+                 k, lset_Len[k], xmin + WStartCut, ymin + HStartCut,
                  xmax + WStartCut,
                  ymax + HStartCut );
         ymin -= All.SecondFinderPad;
@@ -159,6 +157,7 @@ void run_second_finder() {
         hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "map", Data );
 
         group_finder();
+        put_sep;
     }
 
     close_files_for_second_finder();
@@ -191,6 +190,7 @@ void run() {
 int main( int argc, char **argv ) {
 
     char buf[120];
+    mytimer_start;
     memset( sep_str, '-', SEP_LEN-2 );
     sep_str[ SEP_LEN-2 ] = '\n';
     sep_str[ SEP_LEN-1 ] = '\0';
@@ -205,6 +205,8 @@ int main( int argc, char **argv ) {
     create_dir(buf);
 
     run();
+
+    mytimer_end;
 
     return 0;
 

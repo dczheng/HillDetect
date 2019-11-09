@@ -43,7 +43,7 @@ typedef struct GlobalParams {
 //extern_start
 extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
-              FREQ, SigmaClippingVmin;
+              SigmaClippingVmin;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             FileNum,

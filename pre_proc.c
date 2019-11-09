@@ -7,41 +7,38 @@
 
 double RSigma;
 int LogNorm;
-void sigma_clipping( double sigma, double mu ) {
+
+void sigma_clipping( double sigma, double mean ) {
 
     int i;
-    double vmin;
+    double vmin, vcut, vmax, rms, vmin_p;
 
-    vmin = 1e100;
-    for ( i=0; i<Npixs; i++ ) {
-        if ( isnan( Data[i] )|| Data[i]<=0 )
-            continue;
-        vmin = ( vmin < Data[i] ) ? vmin : Data[i];
+    vmin = 1e30;
+    vmin_p = 1e30;
+    vmax = -vmin;
+    for( i=0; i<Npixs; i++ ) {
+        vmin = ( Data[i] < vmin ) ? Data[i] : vmin;
+        vmax = ( Data[i] > vmax ) ? Data[i] : vmax;
+
+        if ( Data[i] > 0 )
+            vmin_p = ( Data[i] < vmin_p ) ? Data[i] : vmin_p;
     }
-
-    for( i=0; i<Npixs; i++ )
-        if ( isnan( Data[i] ) || Data[i] <=0 )
-            Data[i] = vmin;
 
     if ( sigma == 0 ) {
-        for( i=0,mu=0; i<Npixs; i++ )
-            mu += Data[i];
-        mu /= Npixs;
-
-        for( i=0, sigma=0; i<Npixs; i++ ) {
-            sigma += SQR( Data[i] - mu );
-        }
-
-        sigma = sqrt( sigma / Npixs );
+        get_mean_sigma_rms( Data, NULL, Npixs, &mean, &sigma, &rms );
     }
 
-    vmin = mu + RSigma * sigma;
+    vcut = mean + RSigma * sigma;
+    //vcut = 1e-11;
+
     for( i=0; i<Npixs; i++ ) {
-        if ( Data[i] < vmin )
-            Data[i] = vmin; 
+        if ( Data[i] < vcut )
+            Data[i] = vcut; 
     }
-    SigmaClippingVmin = vmin;
 
+    printf( "vmin: %g, vmin[+]: %g, vmax: %g\nmean: %g, sigma: %g, vcut: %g\n",
+            vmin, vmin_p, vmax, mean, sigma, vcut );
+    SigmaClippingVmin = vcut;
 }
 
 void data_cuting() {
@@ -53,7 +50,6 @@ void data_cuting() {
     HEndCut = Height * All.CuttingYEnd;
     WStartCut = Width * All.CuttingXStart;
     WEndCut = Width * All.CuttingXEnd;
-    //printf( "%i %i %i %i\n", Height, Width, h, w  );
 
     if ( HEndCut<=HStartCut || WEndCut<=WStartCut ) {
         endrun( "Invalid cutting parameters." );
@@ -66,20 +62,15 @@ void data_cuting() {
     printf( "region: (%i, %i), (%i, %i)\n",
             HStartCut, HEndCut, WStartCut, WEndCut );
 
-    //output_data( "before_cutting.dat" );
-
     for( i=HStartCut, index=0; i<HEndCut; i++ )
         for ( j=WStartCut; j<WEndCut; j++, index++ ) {
             Data[index] = Data[i*Width+j];
             DataRaw[index] = DataRaw[i*Width+j];
-       }
+        }
 
     HeightGlobal = Height = HEndCut - HStartCut;
     WidthGlobal = Width = WEndCut - WStartCut;
     NpixsGlobal = Npixs = Height * Width;
-
-    //output_data( "after_cutting.dat" );
-    //endrun( "test" );
 }
 
 void normalize() {
@@ -216,13 +207,14 @@ void pre_proc( int mode ) {
     int *flag, xi, yi, p;
 
     if ( mode==0 ) {
+
+        if ( All.DataCutting )
+            data_cuting();
+
         if ( All.SigmaClipping ) {
             RSigma = All.RSigma;
             sigma_clipping(0, 0);
         }
-
-        if ( All.DataCutting )
-            data_cuting();
 
         LogNorm = All.LogNorm;
         normalize();

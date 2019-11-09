@@ -7,6 +7,8 @@
 
 void read_fits( char *fits_fn ) {
 
+    int flag;
+    double vmin, vmax;
     put_start;
     fitsfile *ffp;
     char comment[ FLEN_COMMENT ];
@@ -57,7 +59,7 @@ void read_fits( char *fits_fn ) {
     fits_read_key( ffp, TDOUBLE, "CDELT1", &CDELT1, comment, &status );
     fits_read_key( ffp, TDOUBLE, "CDELT2", &CDELT2, comment, &status );
 
-    fits_read_key( ffp, TDOUBLE, "CRVAL3", &FREQ, comment, &status );
+    //fits_read_key( ffp, TDOUBLE, "CRVAL3", &FREQ, comment, &status );
 
     printf1( CRPIX1 );
     printf1( CRPIX2 );
@@ -68,8 +70,8 @@ void read_fits( char *fits_fn ) {
     printf2( CDELT1 );
     printf2( CDELT2 );
 
-    FREQ /= 1e6;
-    printf2( FREQ );
+    //FREQ /= 1e6;
+    //printf2( FREQ );
 
     fits_close_file(ffp, &status);
     fits_report_error(stderr, status);
@@ -80,6 +82,27 @@ void read_fits( char *fits_fn ) {
 
     //print_data( Data, 230, 290, 580, 640, 0 );
 
+    flag = 0;
+    vmin = 1e100;
+    vmax = -vmin;
+    for( i=0; i<Npixs; i++ ) {
+        if ( isnan( Data[i] ) ) {
+            flag = 1;
+            continue;
+        }
+        vmin = ( Data[i] < vmin ) ? Data[i] : vmin;
+        vmax = ( Data[i] > vmax ) ? Data[i] : vmax;
+    }
+
+    printf( "vmin: %g, vmax: %g\n", vmin, vmax );
+
+    if ( flag ) {
+        printf( "HAVE NAN: set to vmin\n" );
+        for( i=0; i<Npixs; i++ )
+            if ( isnan( Data[i] ) )
+                Data[i] = vmin;
+    }
+
     DataRaw = (double*)malloc(na*sizeof(double));
     for( i=0; i<Npixs; i++ ) {
         DataRaw[i] = Data[i];
@@ -87,7 +110,6 @@ void read_fits( char *fits_fn ) {
 
     //print_data( DataRaw, 230, 640, 580, 640, 0 );
     put_end;
-
 }
 
 void free_fits(){
