@@ -12,12 +12,18 @@ param_file  = sys.argv[1]
 ls = open( param_file ).readlines()
 
 for l in ls:
-    if "FileName" in l and l[0] != '%':
-        fits_file = l.split()[1]
-    if "OutputDir" in l and l[0] != '%':
-        output_dir = l.split()[1]
-    if "DisableSecondFinder" in l and l[0] != '%':
-        disable_second_find = int(l.split()[1])
+    ll = l.split()
+    if ll == []:
+        continue
+
+    if "FileName" == ll[0]:
+        fits_file = ll[1]
+    if "OutputDir" == ll[0]:
+        output_dir = ll[1]
+    if "OnlyFoF" == ll[0]:
+        onlyfof = int(ll[1])
+    if "DisableSecondFinder" == ll[0]:
+        disable_second_find = int(ll[1])
 
 bname = os.path.basename( fits_file )
 
@@ -25,6 +31,7 @@ fmt = "%-25s : %s"
 print( fmt%("fits file", fits_file))
 print( fmt%("bname", bname))
 print( fmt%("SecondFinder", str(disable_second_find)))
+print( fmt%("onlyfof", str(onlyfof)))
 
 output_dir = "%s/%s"%( output_dir, bname )
 print( fmt%("output dir", output_dir) )
@@ -45,7 +52,7 @@ def pix2world( x, y, fits_file ):
     for i in range( len(x) ):
         rai = x[i]
         deci = y[i]
-        r = mywcs.wcs_pix2world( [ [rai, deci, 0, 0], [0, 0, 0, 0] ], 0 )[0]
+        r = mywcs.wcs_pix2world( [ [rai, deci], [0, 0,] ], 0 )[0]
     
         ra1 = r[0]
         dec1 = r[1]
@@ -82,29 +89,47 @@ def gen_catalog( fn_prefix ):
     Ngroup = f.attrs[ 'Ngroup' ]
     print( "Ngroup: %i"%Ngroup )
 
-    data = { 
-        'gidx':[],
+    if onlyfof:
+        data = { 
+            'gidx':[],
         'ridx':[],
-        'mean_inner': [],
-        'mean_outer': [],
-        'sigma_inner': [],
-        'sigma_outer': [],
-        'rms_inner': [],
-        'rms_outer': [],
-        'center-x':[],
-        'center-y':[],
-        'flux_tot':[],
-        'peak_flux':[],
-        'xerr':[],
-        'yerr': [],
-        'ra_err':[],
-        'dec_err': [],
-        'ra': [],
-        'dec': [],
-        'ra[deg]': [],
-        'dec[deg]': []
-    }
-
+            'center-x':[],
+            'center-y':[],
+            'flux_tot':[],
+            'peak_flux':[],
+            'xerr':[],
+            'yerr': [],
+            'ra_err':[],
+            'dec_err': [],
+            'ra': [],
+            'dec': [],
+            'ra[deg]': [],
+            'dec[deg]': []
+        }
+    else:
+        data = { 
+            'gidx':[],
+            'ridx':[],
+            'mean_inner': [],
+            'mean_outer': [],
+            'sigma_inner': [],
+            'sigma_outer': [],
+            'rms_inner': [],
+            'rms_outer': [],
+            'center-x':[],
+            'center-y':[],
+            'flux_tot':[],
+            'peak_flux':[],
+            'xerr':[],
+            'yerr': [],
+            'ra_err':[],
+            'dec_err': [],
+            'ra': [],
+            'dec': [],
+            'ra[deg]': [],
+            'dec[deg]': []
+        }
+    
     data2 = { 
         'gidx':[],
         'ridx':[],
@@ -129,12 +154,6 @@ def gen_catalog( fn_prefix ):
             reg = g[ 'Reg%i'%j ]
             data['gidx'].append( i )
             data['ridx'].append( j )
-            data['mean_inner'].append( g.attrs[ "mean_inner" ] )
-            data['mean_outer'].append( g.attrs[ "mean_outer" ] )
-            data['rms_inner'].append( g.attrs[ "rms_inner" ] )
-            data['rms_outer'].append( g.attrs[ "rms_outer" ] )
-            data['sigma_inner'].append( g.attrs[ "sigma_inner" ] )
-            data['sigma_outer'].append( g.attrs[ "sigma_outer" ] )
             c = reg.attrs[ 'center' ]
             data['center-y'].append( c[0] )
             data['center-x'].append( c[1] )
@@ -143,6 +162,14 @@ def gen_catalog( fn_prefix ):
             data['xerr'].append( xyerr[1] )
             data['peak_flux'].append( reg.attrs[ 'peak_flux' ] )
             data['flux_tot'].append( reg.attrs[ 'flux_tot' ] )
+
+            if not onlyfof:
+                data['mean_inner'].append( g.attrs[ "mean_inner" ] )
+                data['mean_outer'].append( g.attrs[ "mean_outer" ] )
+                data['rms_inner'].append( g.attrs[ "rms_inner" ] )
+                data['rms_outer'].append( g.attrs[ "rms_outer" ] )
+                data['sigma_inner'].append( g.attrs[ "sigma_inner" ] )
+                data['sigma_outer'].append( g.attrs[ "sigma_outer" ] )
 
             flux = reg[ 'flux' ]
             xy = reg[ 'region' ]
@@ -185,7 +212,10 @@ def gen_catalog( fn_prefix ):
     df2.to_csv( output_file2 ,index=False)
     f.close()
 
-gen_catalog( 'lset' )
-if not disable_second_find:
-    gen_catalog( 'fof' )
+if onlyfof:
+    gen_catalog( 'only_fof' )
+else:
+    gen_catalog( 'lset' )
+    if not disable_second_find:
+        gen_catalog( 'fof' )
 

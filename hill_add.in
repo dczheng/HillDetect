@@ -7,12 +7,12 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./fits/test_mask.fits
+FileName                       ./fits/test_add.fits
 OutputDir                      ./outputs
 
 
-SigmaClipping                 1 
-SigmaClipping1                1
+SigmaClipping                 0 
+SigmaClipping1                0
 RSigma                        1 
 RSigma1                       3 
 
@@ -29,3 +29,5 @@ LsetPixMin                    10
 SecondFinderPixMin            10
 DisableSecondFinder           0
 SecondFinderPad               2
+OnlyFoF                       1
+OnlyFoFPixMin                 10 

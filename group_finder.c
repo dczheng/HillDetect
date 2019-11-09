@@ -10,51 +10,71 @@ int *fof_map;
 void group_finder() {
 
     int p, i, xi, yi, xig, yig, *data, index,
-            j, Nfof, *flag;
+            j, Nfof, *flag, PixMin;
     double flux_tot, *flux, f, fmax, xyerr[2], c[2], *img,
             mean[2], sigma[2], rms[2], N;
     char buf[120];
     hsize_t h5_dims[2];
     hid_t h5_g, h5_gg;
 
-    put_start;
+    if ( All.OnlyFoF ) {
+        put_start(0);
+    }
+    else {
+        put_start(1);
+    }
+
     group_finder_init();
 
-    for( p=0; p<Npixs; p++ ) {
-        fof_map[p] = 0;
-        if ( Data[p] > SigmaClippingVmin && Data[p] > 0 ) {
+    for( p=0; p<Npixs; p++ )
+        if ( Data[p] > SigmaClippingVmin && Data[p] > 0 )
            fof_map[p] = 1;
-        } 
-    }
+        else 
+            fof_map[p] = 0;
 
     fof();
 
+    if ( All.OnlyFoF )
+        PixMin = All.OnlyFoFPixMin;
+    else 
+        PixMin = All.SecondFinderPixMin;
+
     for( p=0; p<Npixs; p++ ) {
-        if ( Len[p] < All.SecondFinderPixMin )
+        if ( Len[p] < PixMin )
             break;
     }
 
     Nfof = p;
 
-/*
-    if ( Nfof == 0 ) {
-        group_finder_free();
-        put_end;
+    if ( Nfof  == 0 ) {
         return;
     }
-*/
 
-    printf( "Second fof, Nfof: %i\n", Nfof );
+    if ( All.OnlyFoF ) {
+        writelog( 0, "only fof, Nfof [>%i]: %i\n",
+                    PixMin, Nfof );
+    }
+    else {
+    writelog( 1, "Second fof, Nfof [>%i]: %i\n",
+                    PixMin, Nfof );
+    }
 
-    sprintf( buf, "Group%i", CurGroup );
+    sprintf( buf, "Group%i", Ngroup );
+
+    Nsource += Nfof;
+    Ngroup ++;
+
     h5_g = H5Gcreate( h5_fof, buf, 0 );
     hdf5_write_attr_scalar( h5_g, H5T_NATIVE_INT, "NReg", &Nfof );
 
     data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
-    img = malloc( sizeof(double) * Npixs );
-    flag = malloc( sizeof(int) * Npixs );
-    memset( flag, 0, sizeof(int) * Npixs );
+
+    if ( !All.OnlyFoF ) {
+        img = malloc( sizeof(double) * Npixs );
+        flag = malloc( sizeof(int) * Npixs );
+        memset( flag, 0, sizeof(int) * Npixs );
+    }
 
     N = 0;
     for( i=0; i<Nfof; i++ ) {
@@ -72,9 +92,13 @@ void group_finder() {
             yi = p / Width;
             xig = xi + XShift + WStartCut;
             yig = yi + YShift + HStartCut;
-            flag[p] = 1;
+
+            if ( !All.OnlyFoF )
+                flag[p] = 1;
+
             data[index] = yig;
             data[index+Len[i]] = xig;
+
             if  ( index >= Npixs  * 2 || index+Len[i] >= Npixs * 2  ) {
                 printf( "%i %i %i [%i %i]\n", index, Len[i], Npixs, Width, Height );
                 endrun("can't be!");
@@ -146,41 +170,48 @@ void group_finder() {
         H5Gclose( h5_gg );
     }
 
-    for( i=0; i<2; i++ )
-        mean[i] = sigma[i] = rms[i] = 0;
+    if ( !All.OnlyFoF ) {
+        for( i=0; i<2; i++ )
+            mean[i] = sigma[i] = rms[i] = 0;
 
-    for( p=0; p<Npixs; p++ ){
-        xi = p % Width;
-        yi = p / Width;
-        img[p] = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ] *
+        for( p=0; p<Npixs; p++ ){
+            xi = p % Width;
+            yi = p / Width;
+            img[p] = DataRaw[ (yi + YShift) * WidthGlobal + ( xi + XShift ) ] *
                fabs( CDELT1*CDELT2 ) / All.Beam;
-    }
+        }
 
 
-    get_mean_sigma_rms( img, flag, Npixs, mean, sigma, rms );
+        get_mean_sigma_rms( img, flag, Npixs, mean, sigma, rms );
 
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "mean_outer", mean );
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "mean_inner", mean+1 );
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "rms_outer", rms );
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "rms_inner", rms+1 );
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "sigma_outer", sigma );
-    hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
+        hdf5_write_attr_scalar( h5_g, H5T_NATIVE_DOUBLE,
                         "sigma_inner", sigma+1 );
 
-    H5Gclose( h5_g  );
+        H5Gclose( h5_g  );
+        free( flag );
+        free( img );
+    }
 
     free( data );
     free( flux );
-    free( flag );
-    free( img );
 
     group_finder_free();
-    put_end;
+    if ( All.OnlyFoF ) {
+        put_end(0);
+    }
+    else {
+        put_end(1);
+    }
 }
 
 void group_finder_init() {
@@ -195,7 +226,7 @@ void group_finder_free() {
 
 void lset_group_finder_save() {
 
-    put_start;
+    put_start(1);
     char buf[120];
     int i, p, index, xi, yi, xig, yig, *data, Xs[2], 
             xmin, xmax, ymin, ymax, N, j, *flag, NN, t;
@@ -380,7 +411,7 @@ void lset_group_finder_save() {
      free(flux);
      free(img);
      free(flag);
-     put_end;
+     put_end(1);
 
 }
 
@@ -388,11 +419,10 @@ void lset_group_finder() {
 
     int p, np, pc, i, x, y, flag;
 
-    put_start;
+    put_start(0);
     mytimer_start;
     group_finder_init();
 
-    printf( "find regions\n" );
     fof_reset();
     np = 0;
     for( p=0; p<Npixs; p++ ) {
@@ -425,7 +455,7 @@ void lset_group_finder() {
 
     group_finder_free();
 
-    printf( "lset, Nreg: %i\n", lset_Nreg );
+    writelog( 0, "lset, Nreg: %i\n", lset_Nreg );
 
     pc = 0;
     for (i=0; i<lset_Nreg; i++) {
@@ -450,17 +480,17 @@ void lset_group_finder() {
     }
 
     lset_Nreg = pc;
-    printf( "Nreg [remove edge]: %i\n", lset_Nreg );
+    writelog( 0, "Nreg [remove edge]: %i\n", lset_Nreg );
 
     for (i=0; i<lset_Nreg; i++)
         if ( lset_Len[i] < All.LsetPixMin )
             break;
     lset_Nreg = i;
-    printf( "Nreg [>%i]: %i\n", All.LsetPixMin, lset_Nreg );
+    writelog( 0, "Nreg [>%i]: %i\n", All.LsetPixMin, lset_Nreg );
 
     lset_group_finder_save();
 
     mytimer_end;
-    put_end;
+    put_end(0);
 
 }

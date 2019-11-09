@@ -9,7 +9,6 @@
 
 #include "allvars.h"
 
-FILE *fd_lset_err;
 hid_t f_lset_h5;
 
 void get_c1_c2( double *c1, double *c2 ) {
@@ -177,14 +176,12 @@ void open_files_for_lset() {
 
     char buf[120];
 
-    fd_lset_err = myfopen( "w", "%s/lset_err.dat", All.OutputDir);
     sprintf( buf, "%s/lset_lines.hdf5", All.OutputDir );
     f_lset_h5 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT  );
 
 }
 
 void close_files_for_lset() {
-    fclose( fd_lset_err );
     H5Fclose( f_lset_h5  );
 }
 
@@ -195,7 +192,7 @@ void lset() {
       This function is copied from `http://www.ipol.im/pub/art/2012/g-cv/chanvese_20120715.tar.gz`
     */
 
-    put_start;
+    put_start(0);
     const int NumPixels = Width * Height;
     const int NumEl = NumPixels;
     const double *fPtr;
@@ -277,12 +274,12 @@ void lset() {
 
         lset_find_line();
 
-        fprintf( fd_lset_err, "[%5i]  Delta: %e, c1: %e, c2: %e\n",
+        fprintf( LOG_FILE, "[%5i]  Delta: %e, c1: %e, c2: %e\n",
                   Iter, PhiDiffNorm, c1, c2 );
         printf( "\r[%5i]  Delta: %e, c1: %e, c2: %e",
                   Iter, PhiDiffNorm, c1, c2 );
         fflush( stdout );
-       fflush( fd_lset_err );
+       fflush( LOG_FILE );
         save_line( Iter );
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
@@ -297,5 +294,5 @@ void lset() {
     free( edgex );
     free( edgey );
     free( Phi );
-    put_end;
+    put_end(0);
 }

@@ -9,14 +9,53 @@ import numpy as np
 import h5py
 import sys
 import matplotlib.colors as mplc
+import os
 
-fits_file = sys.argv[1]
-h5_file1 = sys.argv[2]
-h5_file2 = sys.argv[3]
+param_file = sys.argv[1]
+
+ls = open( param_file ).readlines()
+for l in ls:
+
+    ll = l.split()
+    if ll == []:
+        continue
+
+    if "FileName" == ll[0]:
+        fits_file = ll[1]
+
+    if "OutputDir" == ll[0]:
+        OutputDir = ll[1]
+
+    if "CuttingXStart" == ll[0]:
+        CutXStart = float(ll[1])
+
+    if "CuttingXEnd" == ll[0]:
+        CutXEnd = float(ll[1])
+
+    if "CuttingYStart" == ll[0]:
+        CutYStart = float(ll[1])
+
+    if "CuttingYEnd" == ll[0]:
+        CutYEnd = float(ll[1])
+
+bname = os.path.basename( fits_file )
+bname_mask = '%s_mask.fits'%(bname[:-5])
+fmt = '%-25s : %s'
+print( fmt%( "fits file", fits_file ) )
+print( fmt%( "Output dir", OutputDir ) )
+print( fmt%( "base name", bname ) )
+print( fmt%( "base name [mask]", bname_mask ) )
+print( fmt%( "CutXStart", str(CutXStart) ) )
+print( fmt%( "CutXEnd", str(CutXEnd) ) )
+print( fmt%( "CutYStart", str(CutYStart) ) )
+print( fmt%( "CutYEnd", str(CutYEnd) ) )
+
+h5_file1 = "%s/%s/fof_regs.hdf5"%( OutputDir, bname )
+h5_file2 = "%s/%s/fof_regs.hdf5"%( OutputDir, bname_mask )
 out_fits_file = fits_file[:-5] + "_add.fits"
 
 hdu = fits.open( fits_file )[0]
-fits_data = hdu.data[0,0,:,:]
+fits_data = hdu.data
 fits_header = hdu.header
 
 f_h5_1 = h5py.File( h5_file1, 'r' )
@@ -44,20 +83,15 @@ for fi in range(2):
             y = xy[0,:]
             ds[fi][ y, x ] = 1
         d3[ y, x] += fits_data[ y, x ]
+m, n = fits_data.shape
+m0 = int( m * CutYStart )
+m1 = int( m * CutYEnd )
+n0 = int( n * CutXStart )
+n1 = int( n * CutXEnd )
 axs[0,0].imshow( fits_data, norm=mplc.LogNorm() )
-axs[0,1].imshow( d3, norm=mplc.LogNorm() )
-axs[1,0].imshow( d1 )
-axs[1,1].imshow( d1 )
-
-idx = [ 3, 4 ]
-for i in idx:
-    del( fits_header['NAXIS%i'%i] )
-    del( fits_header['CTYPE%i'%i] )
-    del( fits_header['CUNIT%i'%i] )
-    del( fits_header['CRPIX%i'%i] )
-    del( fits_header['CDELT%i'%i] )
-    del( fits_header['CRVAL%i'%i] )
-
+axs[0,1].imshow( d3[m0:m1, n0:n1], norm=mplc.LogNorm() )
+axs[1,0].imshow( d1[m0:m1, n0:n1] )
+axs[1,1].imshow( d1[m0:m1, n0:n1] )
 
 fig.savefig( 'add_hills.png', dpi=300 )
 fits.writeto( out_fits_file, data=d3, header=fits_header,\

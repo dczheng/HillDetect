@@ -13,49 +13,141 @@ import os
 from astropy.io import fits
 
 param_file = sys.argv[1]
-Ngroup = int( sys.argv[2] )
 
 ls = open( param_file ).readlines()
 for l in ls:
-    if "FileName" in l and l[0] != '%':
-        fits_file = l.split()[1]
-    if "OutputDir" in l and l[0] != '%':
-        output_dir = l.split()[1]
+    ll = l.split()
+    if ll == []:
+        continue
 
+    if "FileName" == ll[0]:
+        fits_file = ll[1]
+    if "OutputDir" == ll[0]:
+        output_dir = ll[1]
+    if "OnlyFoF" == ll[0]:
+        onlyfof = int(ll[1])
+
+    if "CuttingXStart" == ll[0]:
+        CutXStart = float(ll[1])
+    if "CuttingXEnd" == ll[0]:
+        CutXEnd = float(ll[1])
+    if "CuttingYStart" == ll[0]:
+        CutYStart = float(ll[1])
+    if "CuttingYEnd" == ll[0]:
+        CutYEnd = float(ll[1])
 bname = os.path.basename( fits_file )
 fmt = "%-25s : %s"
+
+if not onlyfof:
+    Ngroup = int( sys.argv[2] )
+    print( fmt%("Ngroup", str(Ngroup)) )
+else:
+    fits_file_ori = sys.argv[2]
+    print( fmt%("fits file orig", fits_file_ori) )
+
+ 
 print( fmt%( "fits file", fits_file  ) )
 print( fmt%("base name", bname) )
-print( fmt%("Ngroup", str(Ngroup)) )
 print( fmt%("HillDetect output dir", output_dir) )
 output_dir = "%s/%s"%(output_dir, bname)
 print( fmt%("data output dir", output_dir) )
 plot_output_dir = "%s"%bname
 print( fmt%("plot output dir", plot_output_dir) )
+print( fmt%("onlyfof", str(onlyfof)) )
+print( fmt%( "CutXStart", str(CutXStart) ) )
+print( fmt%( "CutXEnd", str(CutXEnd) ) )
+print( fmt%( "CutYStart", str(CutYStart) ) )
+print( fmt%( "CutYEnd", str(CutYEnd) ) )
+
 
 if not os.path.exists( plot_output_dir ):
     os.mkdir( plot_output_dir )
-
-fs =  [\
-"%s/map.hdf5"%output_dir,\
-"%s/map_after.hdf5"%output_dir,\
-"%s/fof_regs.hdf5"%output_dir,\
-"%s/lset_regs.hdf5"%output_dir,\
-"%s/lset_lines.hdf5"%output_dir,\
-]
-h5_fs = []
-for f in fs:
-    print( "load '%s'"%f )
-    h5_fs.append( h5py.File( f, 'r' ) )
-maps, maps_after, fof_regs, lset_regs, lset_lines = h5_fs
 
 hdu = fits.open( fits_file )[0]
 fits_h = hdu.header
 fits_d = hdu.data
 
-if Ngroup == 0:
-    Ngroup = maps.attrs[ "Ngroup" ]
-    print( fmt%("set Ngroup to", str(Ngroup)) )
+m, n = fits_d.shape
+mcut0 = int( m * CutYStart )
+mcut1 = int( m * CutYEnd )
+ncut0 = int( n * CutXStart )
+ncut1 = int( n * CutXEnd )
+
+if not onlyfof:
+    fs =  [\
+    "%s/map.hdf5"%output_dir,\
+    "%s/map_after.hdf5"%output_dir,\
+    "%s/fof_regs.hdf5"%output_dir,\
+    "%s/lset_regs.hdf5"%output_dir,\
+    "%s/lset_lines.hdf5"%output_dir,\
+    ]
+    h5_fs = []
+    for f in fs:
+        print( "load '%s'"%f )
+        h5_fs.append( h5py.File( f, 'r' ) )
+    maps, maps_after, fof_regs, lset_regs, lset_lines = h5_fs
+
+    if Ngroup == 0:
+        Ngroup = maps.attrs[ "Ngroup" ]
+        print( fmt%("set Ngroup to", str(Ngroup)) )
+else:
+    fn = "%s/only_fof_regs.hdf5"%output_dir
+    print( "load '%s'"%fn )
+    h5_f = h5py.File( fn, 'r' )
+
+def plot_only_fof():
+    
+    hdu = fits.open( sys.argv[2] )[0]
+    fits_d_ori = hdu.data
+
+    vmin = fits_d_ori[fits_d_ori>0].min()
+    vmax = fits_d_ori.max()
+    norm = mplc.LogNorm( vmin=vmin, vmax=vmax )
+    fig, axs = plt.subplots( 2, 2, figsize=(20, 20) )
+    axs[0,0].imshow( fits_d_ori, norm=norm, cmap=cm.jet )
+    axs[0,1].imshow( fits_d_ori[mcut0:mcut1, ncut0:ncut1], norm=norm, cmap=cm.jet )
+
+    d = np.zeros( fits_d.shape )
+    g = h5_f[ 'Group0' ]
+    Nreg = g.attrs[ 'NReg' ]
+    print( "Nreg: %i"%Nreg )
+    for i in range( Nreg ):
+        reg = g[ 'Reg%i'%i ]
+        r = reg[ 'region'][()]
+        x = r[1,:]
+        y = r[0,:]
+        d[ y, x ] = 1
+    axs[1,0].imshow( fits_d[mcut0:mcut1, ncut0:ncut1], norm=norm, cmap=cm.jet )
+
+
+    '''
+    t = [ -1, 1 ]
+    for i in range(Nreg):
+        reg = g[ 'Reg%i'%i ]
+        r = reg[ 'region'][()]
+        x = r[1,:]
+        y = r[0,:]
+        for k in range(len(x)):
+
+            if d[ y[k], x[k] ] == 0:
+                continue
+
+            for xx in t:
+                for yy in t:
+                    if y[k]+yy < mcut0 or y[k]+yy > mcut1 or \
+                        x[k]+xx < ncut0 or x[k]+xx > ncut1:
+                        continue
+
+                    if d[ y[k]+yy, x[k]+xx ] == 0:
+                        #print( 'ok')
+                        axs[1,0].plot( [x[k]-ncut0], [y[k]-mcut0], 'k.', ms=0.1 )
+                        break
+    '''
+    axs[1,1].imshow( d[mcut0:mcut1, ncut0:ncut1], norm=mplc.LogNorm() )
+
+
+
+    fig.savefig( '%s/only_fof.png'%plot_output_dir,dpi=300 )
 
 def plot_maps():
 
@@ -119,25 +211,21 @@ def plot_lset():
     
     print( "plot lset and make mask ..." )
 
-    fig, axs = plt.subplots( 2,2, figsize=(2*5, 2*5) )
-    cutstart = maps.attrs[ 'CutStart' ]
-    cutend = maps.attrs[ 'CutEnd' ]
-    print( 'cut start: ', cutstart )
-    print( 'cut end: ', cutend )
-    fits_dd = fits_d[ cutstart[0]:cutend[0], cutstart[1]:cutend[1] ]
     vmin = fits_d[fits_d>0].min()
     vmax = fits_d.max()
     norm = mplc.LogNorm( vmin=vmin, vmax=vmax )
 
+    fig, axs = plt.subplots( 2,2, figsize=(2*5, 2*5) )
+    fits_dd = fits_d[ mcut0:mcut1, ncut0:ncut1 ]
     axs[0,0].imshow( fits_d, norm=norm, cmap=cm.jet )
     axs[0,1].imshow( fits_dd, norm=norm, cmap=cm.jet )
 
     iters = lset_lines.attrs[ 'iters' ]
     print( "iters: %i"%iters )
     line = lset_lines[ 'iter%i/line'%iters ][()]
-    y = line[0,:] - cutstart[0]
-    x = line[1,:] - cutstart[1]
-    axs[0,1].plot( x, y, 'b.', ms=0.3  )
+    y = line[0,:] - mcut0 
+    x = line[1,:] - ncut0
+    axs[0,1].plot( x, y, 'b.', ms=0.1  )
 
     img = np.zeros( fits_dd.shape )
     global Ngroup
@@ -146,8 +234,8 @@ def plot_lset():
         m0, n0 = g.attrs[ 'CRPIX' ]
         mm = g[ 'map' ]
         m, n = mm.shape
-        m0 = m0 - cutstart[0]
-        n0 = n0 - cutstart[1]
+        m0 = m0 - mcut0
+        n0 = n0 - ncut0
         img[ m0:m0+m, n0:n0+n ] = mm
     axs[1,0].imshow( img, norm=norm, cmap=cm.jet )
 
@@ -173,8 +261,14 @@ def plot_lset():
     fits.writeto( '%s_mask.fits'%(fits_file[:-5]),\
                 data=fits_mask, header=fits_h, overwrite=True )
 
-#plot_maps()
-plot_lset()
+if not onlyfof:
+    plot_maps()
+    plot_lset()
+else:
+    plot_only_fof()
 
-for f in h5_fs:
-    f.close()
+if not onlyfof:
+    for f in h5_fs:
+        f.close()
+else:
+    h5_f.close()

@@ -18,7 +18,7 @@ void read_parameters( char *fn ) {
         buf1[200], buf2[200], buf3[200];
     int id[MAXTAGS], nt, i, j, errflag=0;;
 
-    put_start;
+    put_start(0);
     fd = fopen( fn, "r" );
     if ( NULL == fd ){
         printf( "Faile to Open Parameter file %s\n", fn );
@@ -45,15 +45,15 @@ void read_parameters( char *fn ) {
             switch ( id[j] ) {
                 case REAL:
                     *( (double*)addr[j] ) = atof( buf2 );
-                    printf(  "[D] %-25s : %g\n", buf1, *((double*)addr[j]) );
+                    writelog( 0, "[D] %-25s : %g\n", buf1, *((double*)addr[j]) );
                     break;
                 case INT:
                     *( (int*)addr[j] ) = atoi( buf2 );
-                    printf( "[I] %-25s : %d\n", buf1, *((int*)addr[j]) );
+                    writelog( 0, "[I] %-25s : %d\n", buf1, *((int*)addr[j]) );
                     break;
                 case STRING:
                     strcpy( (char*)addr[j], buf2 );
-                    printf( "[S] %-25s : %s\n", buf1, buf2 );
+                    writelog( 0, "[S] %-25s : %s\n", buf1, buf2 );
                     break;
             }
         }
@@ -71,6 +71,6 @@ void read_parameters( char *fn ) {
     if ( errflag )
         exit(20190723);
     fclose( fd );
-    put_end;
+    put_end(0);
 
 }

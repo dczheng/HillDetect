@@ -31,8 +31,8 @@ typedef struct GlobalParams {
          SigmaClipping,
          SigmaClipping1,
          DataCutting, PeakCenterFlag,
-         LsetPixMin, SecondFinderPixMin,
-         DisableSecondFinder, SecondFinderPad;
+         LsetPixMin, SecondFinderPixMin, OnlyFoFPixMin,
+         DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
@@ -50,12 +50,13 @@ extern int
             *edgex, *edgey,
             Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
             HStartCut, HEndCut, WStartCut, WEndCut, CurGroup,
-            *lset_Next, *lset_Head, *lset_Len, lset_Nreg;
+            *lset_Next, *lset_Head, *lset_Len, lset_Nreg, Nsource, Ngroup;
 
 extern char FileName[ MYFILENAME_MAX ],
             *AllFileNames, *InputBaseName;
 extern GlobalParams All;
 hid_t h5_fof;
+FILE *LOG_FILE;
 //extern_end
 
 extern int *Next, *Head, *Len, *Tail;

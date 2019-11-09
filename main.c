@@ -9,7 +9,7 @@ hid_t h5_map, h5_map_after;
 
 void run_first_finder() {
 
-    put_start;
+    put_start(0);
     mytimer_start;
 
     pre_proc(0);
@@ -21,7 +21,7 @@ void run_first_finder() {
     lset();
 
     mytimer_end;
-    put_end;
+    put_end(0);
 }
 
 void open_files_for_second_finder() {
@@ -55,7 +55,6 @@ void open_files_for_second_finder() {
 
     hdf5_write_attr_scalar( h5_map, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
     hdf5_write_attr_scalar( h5_map_after, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
-    hdf5_write_attr_scalar( h5_fof, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
  
 }
 
@@ -73,7 +72,8 @@ void run_second_finder() {
 
     int i, p, j, k, Xs[2],
          xmin, xmax, ymin, ymax, x, y, w, h;
-    put_start;
+    put_start(0);
+    Nsource = Ngroup = 0;
 
     open_files_for_second_finder();
 
@@ -93,11 +93,6 @@ void run_second_finder() {
             p = lset_Next[p];
         }
 
-        printf( "group %05i [%05i] "
-                "region: (%i, %i) - (%i, %i)\n",
-                 k, lset_Len[k], xmin + WStartCut, ymin + HStartCut,
-                 xmax + WStartCut,
-                 ymax + HStartCut );
         ymin -= All.SecondFinderPad;
         if ( ymin<=0 )
             ymin = 0;
@@ -157,26 +152,30 @@ void run_second_finder() {
         hdf5_write_data( h5_g, H5T_NATIVE_DOUBLE, h5_dims, 2, "map", Data );
 
         group_finder();
-        put_sep;
+        put_sep(1);
     }
+    printf( "\n" );
+
+    hdf5_write_attr_scalar( h5_fof, H5T_NATIVE_INT, "Ngroup", &Ngroup );
+
+    writelog( 0, "Ngroup: %i, Nsource: %i\n", Ngroup, Nsource );
 
     close_files_for_second_finder();
-    put_end;
-
+    put_end(0);
 }
 
 
 void run() {
 
     read_fits( All.FileName );
-    put_sep;
+    put_sep(0);
 
     run_first_finder();
-    put_sep;
+    put_sep(0);
 
     if ( !All.DisableSecondFinder ) {
         run_second_finder();
-        put_sep;
+        put_sep(0);
     }
 
     free( lset_Next );
@@ -187,24 +186,54 @@ void run() {
 
 }
 
+void run_fof_only() {
+
+    char buf[120];
+    read_fits( All.FileName );
+    put_sep(0);
+
+    pre_proc( 0 );
+    XShift = YShift = SigmaClippingVmin = 0;
+    Ngroup = 0;
+
+    sprintf( buf,"%s/only_fof_regs.hdf5", All.OutputDir );
+    h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    group_finder();
+
+    hdf5_write_attr_scalar( h5_fof, H5T_NATIVE_INT, "Ngroup", &Ngroup );
+
+    H5Fclose( h5_fof );
+
+    free_fits();
+
+}
+
 int main( int argc, char **argv ) {
 
     char buf[120];
-    mytimer_start;
     memset( sep_str, '-', SEP_LEN-2 );
     sep_str[ SEP_LEN-2 ] = '\n';
     sep_str[ SEP_LEN-1 ] = '\0';
 
-    put_sep;
+    LOG_FILE =  myfopen( "w", "%s.log", argv[1] );
 
+    mytimer_start;
     read_parameters( argv[1] );
+    put_sep(0);
+
     InputBaseName = basename( All.FileName );
     create_dir( All.OutputDir );
     sprintf( buf, "%s/%s", All.OutputDir, InputBaseName );
     sprintf( All.OutputDir, "%s", buf );
     create_dir(buf);
 
-    run();
+    if ( All.OnlyFoF )
+        run_fof_only();
+    else 
+        run();
+
+    fclose( LOG_FILE );
 
     mytimer_end;
 

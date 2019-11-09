@@ -26,34 +26,45 @@
     exit( 0 ); \
 }
 
+#define writelog( _flag, _fmt, ... ) {\
+    fprintf( LOG_FILE, _fmt, ##__VA_ARGS__ );\
+    fflush( LOG_FILE );\
+    if ( !(_flag) ) {\
+        printf( _fmt, ##__VA_ARGS__ );\
+        fflush( stdout );\
+    }\
+}
+
 #define endrun( s ) {\
     endrun0( "error info: %s\n", s ); \
 }
 
-#define put_sep printf( sep_str );
+#define put_sep( _flag )  {\
+    writelog( _flag, sep_str );\
+}
 
 #define mytimer_start \
     double timer1, timer2;\
     (void) timer1;\
     (void) timer2;\
-printf( "[Timer Start in `%s`]\n", __FUNCTION__ ); \
+    writelog( 0, "[Timer Start in `%s`]\n", __FUNCTION__ ); \
     timer1 = second(); \
     timer2 = timer1;
 
 #define mytimer \
-    printf( "[Time in `%s`]: %g sec\n", __FUNCTION__, second() - timer2 ); \
+    writelog( 0, "[Time in `%s`]: %g sec\n", __FUNCTION__, second() - timer2 ); \
     timer2 = second();
 
 #define mytimer_end \
     printf( "[Total Time in `%s`]: [%g sec]\n", __FUNCTION__, second() - timer1 ); \
 
-#define put_start {\
-    printf( ">>> start `%s`\n", __FUNCTION__ );\
+#define put_start( _flag ) {\
+    writelog( _flag, ">>> start `%s`\n", __FUNCTION__ );\
 }
 
-#define put_end {\
-    printf( ">>> end `%s`\n", __FUNCTION__ );\
+#define put_end( _flag ) {\
+    writelog( _flag, ">>> end `%s`\n", __FUNCTION__ );\
 }
 
-#define printf1( a ) printf( "%-20s: %i\n", #a, a )
-#define printf2( a ) printf( "%-20s: %g\n", #a, a )
+#define printf1( a ) writelog( 0, "%-20s: %i\n", #a, a )
+#define printf2( a ) writelog( 0, "%-20s: %g\n", #a, a )

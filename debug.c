@@ -1,7 +1,7 @@
 #include "allvars.h"
 // those functions used for debug
 void print_data( double *d, int x0, int x1, int y0, int y1, int flag ) {
-    put_sep;
+    put_sep(0);
     printf( "x0: %i, x1: %i, y0: %i, y1: %i\n", x0, x1, y0, y1 );
     int ti, tj;
     int tindex;
@@ -23,7 +23,7 @@ void print_data( double *d, int x0, int x1, int y0, int y1, int flag ) {
     printf( "tmin: %g, tmax: %g\n", tmin, tmax );
     if ( flag )
         endrun("");
-    put_sep;
+    put_sep(0);
 
 }
 

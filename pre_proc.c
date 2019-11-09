@@ -8,7 +8,7 @@
 double RSigma;
 int LogNorm;
 
-void sigma_clipping( double sigma, double mean ) {
+void sigma_clipping( double sigma, double mean, int flag ) {
 
     int i;
     double vmin, vcut, vmax, rms, vmin_p;
@@ -29,6 +29,7 @@ void sigma_clipping( double sigma, double mean ) {
     }
 
     vcut = mean + RSigma * sigma;
+    //printf( "%g %g %g %g\n", mean, RSigma, sigma, vcut );
     //vcut = 1e-11;
 
     for( i=0; i<Npixs; i++ ) {
@@ -36,8 +37,9 @@ void sigma_clipping( double sigma, double mean ) {
             Data[i] = vcut; 
     }
 
-    printf( "vmin: %g, vmin[+]: %g, vmax: %g\nmean: %g, sigma: %g, vcut: %g\n",
-            vmin, vmin_p, vmax, mean, sigma, vcut );
+    writelog( flag, "vmin: %g, vmin[+]: %g, vmax: %g\n"
+            "Rsigma: %g, mean: %g, sigma: %g, vcut: %g\n",
+            vmin, vmin_p, vmax, RSigma, mean, sigma, vcut );
     SigmaClippingVmin = vcut;
 }
 
@@ -202,9 +204,14 @@ void ft_clipping( int mode ){
 
 void pre_proc( int mode ) {
     
-    put_start;
+    put_start(mode);
     double sigma[2], mean[2], rms[2];
     int *flag, xi, yi, p;
+
+    if ( All.OnlyFoF ) {
+        data_cuting();
+        return;
+    }
 
     if ( mode==0 ) {
 
@@ -213,7 +220,7 @@ void pre_proc( int mode ) {
 
         if ( All.SigmaClipping ) {
             RSigma = All.RSigma;
-            sigma_clipping(0, 0);
+            sigma_clipping(0, 0, 0);
         }
 
         LogNorm = All.LogNorm;
@@ -239,14 +246,17 @@ void pre_proc( int mode ) {
                 flag[ yi*Width+xi ] = 1;
                 p = lset_Next[p];
             }
-            printf( "NPixs: %i, Npixs[inner]: %i, NPixs[outer]: %i\n",
-                Npixs, lset_Len[CurGroup],
-                Npixs-lset_Len[CurGroup] );
+            writelog( 1, "[%5i], NPixs: %i, Npixs[inner]: %i, NPixs[outer]: %i\n",
+                CurGroup, Npixs, lset_Len[CurGroup], Npixs-lset_Len[CurGroup] );
+
+            printf( "\r[%5i], NPixs: %8i, Npixs[inner]: %8i, NPixs[outer]: %8i",
+                CurGroup, Npixs, lset_Len[CurGroup], Npixs-lset_Len[CurGroup] );
+
             get_mean_sigma_rms( Data, flag, Npixs,  mean, sigma, rms );
             free( flag );
             RSigma = All.RSigma1;
-            sigma_clipping( sigma[0], mean[0]);
+            sigma_clipping( sigma[0], mean[0], 1);
         }
     }
-    put_end;
+    put_end(mode);
 }

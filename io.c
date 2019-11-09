@@ -9,7 +9,7 @@ void read_fits( char *fits_fn ) {
 
     int flag;
     double vmin, vmax;
-    put_start;
+    put_start(0);
     fitsfile *ffp;
     char comment[ FLEN_COMMENT ];
 #define MAXDIMS 8
@@ -94,10 +94,10 @@ void read_fits( char *fits_fn ) {
         vmax = ( Data[i] > vmax ) ? Data[i] : vmax;
     }
 
-    printf( "vmin: %g, vmax: %g\n", vmin, vmax );
+    writelog( 1, "vmin: %g, vmax: %g\n", vmin, vmax );
 
     if ( flag ) {
-        printf( "HAVE NAN: set to vmin\n" );
+        writelog( 1, "HAVE NAN: set to vmin\n" );
         for( i=0; i<Npixs; i++ )
             if ( isnan( Data[i] ) )
                 Data[i] = vmin;
@@ -109,7 +109,7 @@ void read_fits( char *fits_fn ) {
     }
 
     //print_data( DataRaw, 230, 640, 580, 640, 0 );
-    put_end;
+    put_end(0);
 }
 
 void free_fits(){
