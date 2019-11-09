@@ -29,3 +29,5 @@ LsetPixMin                    10
 SecondFinderPixMin            10
 DisableSecondFinder           0
 SecondFinderPad               2
+OnlyFoF                       0
+OnlyFoFPixMin                 0

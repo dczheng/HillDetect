@@ -25,7 +25,12 @@ CuttingYEnd                   0.76
 PeakCenterFlag                1
 Beam                          4.915e-06
 
+DisableSecondFinder           0
+
 LsetPixMin                    10
 SecondFinderPixMin            10
-DisableSecondFinder           0
+
 SecondFinderPad               2
+
+OnlyFoF                       0
+OnlyFoFPixMin                 0
