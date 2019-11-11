@@ -7,6 +7,7 @@ import pandas as pd
 from astropy.wcs import WCS
 import numpy as np
 from astropy.io import fits
+import tools
 
 param_file  = sys.argv[1]
 ls = open( param_file ).readlines()
@@ -39,45 +40,6 @@ print( fmt%("output dir", output_dir) )
 hdu = fits.open( fits_file )[0]
 cdelt1 = hdu.header[ 'CDELT1' ]
 cdelt2 = hdu.header[ 'CDELT2' ]
-
-
-def pix2world( x, y, fits_file ):
-    
-    mywcs = WCS( fits_file )
-
-    ras = []
-    decs = []
-    ras_deg = []
-    decs_deg = []
-    for i in range( len(x) ):
-        rai = x[i]
-        deci = y[i]
-        r = mywcs.wcs_pix2world( [ [rai, deci], [0, 0,] ], 0 )[0]
-    
-        ra1 = r[0]
-        dec1 = r[1]
-        if ra1 < 0:
-            ra1 += 360
-        ra = ra1
-        h = int(ra/(15.0))
-        ra = ra - h * 15 
-        m = int( ra/(15)*60 )
-        s = (ra - m*15/60) / 360 * 24 * 60 * 60
-        ra2 = "%ih%im%.10es"%( h, m, s )
-    
-        dec = dec1
-        sign = dec / np.abs(dec)
-        dec = np.abs(dec)
-        d = int(dec) * sign
-        dec = (dec - int(dec)) * 60
-        m = int(dec)
-        s = (dec - int(dec)) * 60
-        dec2 = "%id%im%.10es"%( d, m, s )
-        ras_deg.append( ra1 )
-        decs_deg.append( dec1 )
-        ras.append( ra2 )
-        decs.append( dec2 )
-    return ras_deg, decs_deg, ras, decs
 
 def gen_catalog( fn_prefix ):
 
@@ -183,7 +145,7 @@ def gen_catalog( fn_prefix ):
 
 
     print( "Ntot: %i"%Ntot )
-    ra_deg, dec_deg, ra, dec = pix2world( data['center-x'], data['center-y'], fits_file )
+    ra_deg, dec_deg, ra, dec = tools.pix2world( data['center-x'], data['center-y'], fits_file )
     data['ra'] = ra
     data['dec'] = dec
     data['ra[deg]'] = ra_deg
@@ -194,7 +156,7 @@ def gen_catalog( fn_prefix ):
     #for k in data.keys():
     #    print( k, len(data[k]) )
 
-    ra_deg, dec_deg, ra, dec = pix2world( data2['x'], data2['y'], fits_file )
+    ra_deg, dec_deg, ra, dec = tools.pix2world( data2['x'], data2['y'], fits_file )
     data2['ra'] = ra
     data2['dec'] = dec
     data2['ra[deg]'] = ra_deg
@@ -207,7 +169,7 @@ def gen_catalog( fn_prefix ):
         os.mkdir( bname )
 
     output_file  = '%s/%s_catalog_%s.csv'%(bname,bname, fn_prefix)
-    output_file2 = '%s/%s_catalog_%s_flux.csv'%(bname,bname, fn_prefix)
+    output_file2 = '%s/%s_catalog_%s_point.csv'%(bname,bname, fn_prefix)
     df.to_csv( output_file ,index=False)
     df2.to_csv( output_file2 ,index=False)
     f.close()

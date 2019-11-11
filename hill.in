@@ -7,7 +7,7 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./fits/test.fits
+FileName                       ./fits/ll2000.fits
 OutputDir                      ./outputs
 
 

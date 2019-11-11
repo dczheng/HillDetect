@@ -61,7 +61,7 @@ print( fmt%( "CutYEnd", str(CutYEnd) ) )
 
 
 if not os.path.exists( plot_output_dir ):
-    os.mkdir( plot_output_dir )
+    os.makedirs( plot_output_dir )
 
 hdu = fits.open( fits_file )[0]
 fits_h = hdu.header

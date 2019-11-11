@@ -1,0 +1,10 @@
+FileName                       ./fits/test.fits
+OutputDir                      ./outputs
+InnerClip                    5
+OuterClip                    4
+Cores                        1
+
+CuttingXStart                 0.24
+CuttingXEnd                   0.76
+CuttingYStart                 0.24
+CuttingYEnd                   0.76

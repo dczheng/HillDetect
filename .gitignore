@@ -19,7 +19,8 @@ protos.h
 *csv*
 *osm
 case/
-aegean_test/
+aegean/
 HillDetect
 other_py/
 chanvese/
+__pycache__/
