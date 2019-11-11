@@ -202,7 +202,6 @@ def plot_maps():
 
             ax.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
             ax1.errorbar( [c[1]], [c[0]], yerr=[xyerr[0]], xerr=[xyerr[1]], linewidth=10 )
-            f = f + img[ y, x ].sum()
 
     fig.savefig( '%s/map.png'%plot_output_dir)
     fig1.savefig( '%s/map_after.png'%plot_output_dir )

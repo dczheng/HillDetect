@@ -10,8 +10,10 @@ import h5py
 import sys
 import matplotlib.colors as mplc
 import os
+from matplotlib import cm
 
 param_file = sys.argv[1]
+N = int( sys.argv[2] )
 
 ls = open( param_file ).readlines()
 for l in ls:
@@ -54,6 +56,14 @@ h5_file1 = "%s/%s/fof_regs.hdf5"%( OutputDir, bname )
 h5_file2 = "%s/%s/fof_regs.hdf5"%( OutputDir, bname_mask )
 out_fits_file = fits_file[:-5] + "_add.fits"
 
+f_h5s = []
+t = '' 
+for i in range(N):
+    fn  ="%s/%s%s.fits/fof_regs.hdf5"%(OutputDir, bname[:-5], t)
+    print( 'load %s'%fn )
+    f_h5s.append( h5py.File( fn, 'r' ) )
+    t = t + '_mask'
+
 hdu = fits.open( fits_file )[0]
 fits_data = hdu.data
 fits_header = hdu.header
@@ -61,16 +71,14 @@ fits_header = hdu.header
 f_h5_1 = h5py.File( h5_file1, 'r' )
 f_h5_2 = h5py.File( h5_file2, 'r' )
 
-fig, axs = plt.subplots( 2, 2, figsize=(10,10) )
+fig, axs = plt.subplots( 2, N+2, figsize=(5*(N+2),10) )
 
-d1 = np.zeros( fits_data.shape )
-d2 = np.zeros( fits_data.shape )
-d3 = np.zeros( fits_data.shape )
+ds = []
+for i in range(N):
+    ds.append( np.zeros( fits_data.shape ) )
+d_add = np.zeros( fits_data.shape )
 
-ds = [ d1, d2 ]
-f_h5s = [ f_h5_1, f_h5_2 ]
-
-for fi in range(2):
+for fi in range(N):
     f = f_h5s[fi]
     Ngroup = f.attrs[ 'Ngroup' ]
     for i in range( Ngroup ):
@@ -82,19 +90,31 @@ for fi in range(2):
             x = xy[1,:]
             y = xy[0,:]
             ds[fi][ y, x ] = 1
-        d3[ y, x] += fits_data[ y, x ]
+        d_add[y, x] += fits_data[ y, x ]
+
 m, n = fits_data.shape
 m0 = int( m * CutYStart )
 m1 = int( m * CutYEnd )
 n0 = int( n * CutXStart )
 n1 = int( n * CutXEnd )
-axs[0,0].imshow( fits_data, norm=mplc.LogNorm() )
-axs[0,1].imshow( d3[m0:m1, n0:n1], norm=mplc.LogNorm() )
-axs[1,0].imshow( d1[m0:m1, n0:n1] )
-axs[1,1].imshow( d1[m0:m1, n0:n1] )
+
+t = 'source'
+for i in range(N):
+    axs[0,i+1].imshow( ds[i], norm=mplc.LogNorm(), cmap=cm.jet )
+    axs[1,i+1].imshow( ds[i][m0:m1, n0:n1], norm=mplc.LogNorm(), cmap=cm.jet )
+    axs[0,i+1].set_title( t )
+    t = t + '_mask'
+
+axs[0,0].imshow( fits_data, norm=mplc.LogNorm(), cmap=cm.jet )
+axs[1,0].imshow( fits_data[m0:m1, n0:n1], norm=mplc.LogNorm(), cmap=cm.jet )
+axs[0,0].set_title( 'origin' )
+
+axs[0,N+1].imshow( d_add, norm=mplc.LogNorm(), cmap=cm.jet )
+axs[1,N+1].imshow( d_add[m0:m1, n0:n1], norm=mplc.LogNorm(), cmap=cm.jet )
+axs[0,N+1].set_title( 'add' )
 
 fig.savefig( 'add_hills.png', dpi=300 )
-fits.writeto( out_fits_file, data=d3, header=fits_header,\
+fits.writeto( out_fits_file, data=d_add, header=fits_header,\
         overwrite=True )
 
 f_h5_1.close()

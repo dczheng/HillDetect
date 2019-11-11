@@ -14,5 +14,5 @@ make
 add_hills.py hill.in 
 
 ./HillDetect hill_add.in
-./plot.py hill_add.in fits/test.fits
-#./gen_catalog.py hill_add.in
+./plot.py hill_add.in fits/ll2000.fits
+#./gen_cata log.py hill_add.in
