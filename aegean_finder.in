@@ -8,3 +8,5 @@ CuttingXStart                 0.24
 CuttingXEnd                   0.76
 CuttingYStart                 0.24
 CuttingYEnd                   0.76
+
+FluxMin                       1e-10

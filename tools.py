@@ -8,7 +8,6 @@ import astropy.units as au
 
 def pix2world( x, y, fits_file ):
     
-
     mywcs = WCS( fits_file )
     r = mywcs.wcs_pix2world(\
             np.array([ [x[i], y[i]] for i in range(len(x)) ]),\
@@ -22,6 +21,6 @@ def pix2world( x, y, fits_file ):
     for i in range(len(t[0])):
         ra.append( "%ih%im%g"%(t[0][i], t[1][i], t[2][i]) )
 
-    dec = Angle( dec_deg * au.deg )
+    dec = Angle( dec_deg * au.deg ).to_string()
 
     return ra_deg, dec_deg, ra, dec

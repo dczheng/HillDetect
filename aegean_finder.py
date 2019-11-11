@@ -62,6 +62,9 @@ for l in ls:
     if "CuttingYEnd" == ll[0]:
         cuty1 = float( ll[1] )
 
+    if "FluxMin" == ll[0]:
+        fluxmin = float( ll[1] )
+
 bname = os.path.basename( fits_file )
 aegean_outputdir = "%s/%s_aegean"%( OutputDir, bname )
 catalog_file = "%s/catalog.csv"%aegean_outputdir
@@ -87,6 +90,7 @@ print( fmt%( "cutx0", cutx0 ) )
 print( fmt%( "cutx1", cutx1 ) )
 print( fmt%( "cuty0", cuty0 ) )
 print( fmt%( "cuty1", cuty1 ) )
+print( fmt%( "fluxmin", fluxmin ) )
 
 hdu = fits.open( fits_file )[0]
 fits_data = hdu.data
@@ -137,7 +141,7 @@ data = { \
 
 for i in range(m):
     for j in range(n):
-        if img[i, j] > 0:
+        if img[i, j] > fluxmin:
             data[ 'y' ].append(i)
             data[ 'x' ].append(j)
             data['flux'].append(img[i,j])
