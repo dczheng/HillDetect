@@ -7,13 +7,13 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./fits/ll2000_mask_mask.fits
+FileName                       ./fits/ll2000.fits
 OutputDir                      ./outputs
 
 
 SigmaClipping                 1 
 SigmaClipping1                1
-RSigma                        0.8 
+RSigma                        0.005
 RSigma1                       2.5 
 
 DataCutting                   1

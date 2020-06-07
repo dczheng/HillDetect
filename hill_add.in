@@ -7,7 +7,7 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./fits/ll2000_add.fits
+FileName                       ./fits/ll800noise_add.fits
 OutputDir                      ./outputs
 
 

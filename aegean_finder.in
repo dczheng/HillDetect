@@ -1,4 +1,4 @@
-FileName                       ./fits/test.fits
+FileName                       ./fits/ll800noise.fits
 OutputDir                      ./outputs
 InnerClip                    5
 OuterClip                    4

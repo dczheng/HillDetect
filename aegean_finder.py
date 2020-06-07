@@ -74,6 +74,11 @@ plot_file = "%s/aegean.png"%aegean_outputdir
 if not os.path.exists( aegean_outputdir ):
     os.makedirs( aegean_outputdir )
 
+#x = range(100)
+#y = range(100)
+#tools.pix2world( x, y, fits_file )
+#exit()
+
 fmt = '%-25s : %s'
 print( fmt%( "fits file", fits_file ) )
 print( fmt%( "base name", bname ) )
@@ -104,7 +109,8 @@ found = sf.find_sources_in_image( filename = fits_file,\
                                   innerclip = innerclip,\
                                   outerclip = outerclip,\
                                   cores = 5,\
-                                  nonegative=True \
+                                  nonegative=False \
+                                  #nonegative=True \
                                   )
 save_catalog( catalog_file, found )
 

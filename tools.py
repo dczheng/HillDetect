@@ -19,8 +19,12 @@ def pix2world( x, y, fits_file ):
     t = Angle( ra_deg * au.deg ).hms
     ra = []
     for i in range(len(t[0])):
-        ra.append( "%ih%im%g"%(t[0][i], t[1][i], t[2][i]) )
+        ra.append( "%ih%im%.8fs"%(t[0][i], t[1][i], t[2][i]) )
 
-    dec = Angle( dec_deg * au.deg ).to_string()
+    t = Angle( dec_deg * au.deg ).signed_dms
+    dec = []
+    for i in range(len(t[0])):
+        dec.append( "%ih%im%.8fs"%(t[1][i]*t[0][i], t[2][i], t[3][i]) )
+    #print( dec )
 
     return ra_deg, dec_deg, ra, dec
