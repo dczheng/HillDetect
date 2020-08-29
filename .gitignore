@@ -24,3 +24,4 @@ HillDetect
 other_py/
 chanvese/
 __pycache__/
+*.in
