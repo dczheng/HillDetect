@@ -17,6 +17,7 @@ void get_c1_c2( double *c1, double *c2 ) {
     double s1, s2, n1, n2;
     n1 = n2 = 0;
     s1 = s2 = 0;
+
     for( i=0; i<Npixs; i++ ) {
         if ( Phi[i] > 0 ) {
             n1 ++;
@@ -38,35 +39,11 @@ void get_s1_s2( double *s1, double *s2 ) {
     int i;
     *s1 = *s2 = 0;
     for( i=0; i<Npixs; i++ ) {
-        if ( Phi[i] > 0 ) {
-            *s1 += Data[i];
-        }
-        else {
-            *s2 += Data[i];
-        }
+        if ( Phi[i] > 0 ) *s1 += Data[i];
+        else *s2 += Data[i];
     }
 
 }
-
-/*
-void save_phi( int iter ) {
-
-    FILE *fd;
-    int i, j;
-    int index;
-
-    fd = myfopen( "w", "%s/%s_phi_%i", All.PhiDir, InputBaseName, iter );
-
-    for( i=0, index=0; i<Height; i++ ) {
-        for( j=0; j<Width; j++, index++ ) {
-            fprintf( fd, "%g ", Phi[index] );
-        }
-        fprintf( fd, "\n" );
-    }
-
-    fclose( fd );
-}
-*/
 
 void lset_find_line() {
     int i,j;
@@ -85,10 +62,8 @@ void lset_find_line() {
                 edgey[edgen] = i;
                 edgen++;
             }
-
         }
     }
-
 }
 
 void save_line( int iter ) {
@@ -155,20 +130,6 @@ void init_phi() {
         for ( j=0; j<Width; j++, index++ ) {
             Phi[index]= sin(i*M_PI/5.0) * sin(j*M_PI/5.0);
         }
-
-/*
-    FILE *fd;
-    char buf[110];
-    sprintf( buf, "%s-phi0.dat", fits_fn );
-    fd = fopen( buf, "w" );
-    for( i=0, index=0; i<height; i++ ) {
-        for ( j=0; j<width; j++, index++ ) {
-            fprintf( fd, "%g ", phi[index] );
-        }
-        fprintf( fd, "\n" );
-    }
-    fclose(fd);
-*/
 
 }
 

@@ -69,12 +69,12 @@ void run_second_finder() {
     char buf[100];
     hid_t h5_g;
     hsize_t h5_dims[2];
-
     int i, p, j, k, Xs[2],
-         xmin, xmax, ymin, ymax, x, y, w, h;
+         xmin, xmax, ymin, ymax,
+         x, y, w, h;
+
     put_start(0);
     Nsource = Ngroup = 0;
-
     open_files_for_second_finder();
 
     for( k=0; k<lset_Nreg; k++ ) {
@@ -83,6 +83,7 @@ void run_second_finder() {
         xmin = ymin = INT_MAX;
         xmax = ymax = -xmin;
         p = lset_Head[k];
+
         while(p>=0) {
             x = p % WidthGlobal;
             y = p / WidthGlobal;
