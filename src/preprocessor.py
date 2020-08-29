@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
 import re
 import sys
+import os
     
 debug = 0
+work_dir = '.'
+
 def myprint( s ):
     if debug:
         print(s)
 
 def gen_add_params():
 
-    lines = ''.join(open( 'allvars.h' ).readlines())
+    lines = ''.join(open( os.path.join(work_dir, 'allvars.h') ).readlines())
     
     i, j = re.search( 'GlobalParams.*GlobalParams;', lines, re.DOTALL ).span()
     s = lines[i+1:j-1]
@@ -35,7 +38,7 @@ def gen_add_params():
         n += len( my_vars[k] )
     #print( n )
 
-    f = open( 'add_params.h', 'w' )
+    f = open( os.path.join(work_dir, 'add_params.h'), 'w' )
     f.write( '#define MAXTAGS %i\n'%n )
     f.write( '#define ADD_PARAM_SINGLE(s, t){\\\n' )
     f.write( "\tstrcpy( tag[nt], #s );\\\n" )
@@ -54,12 +57,12 @@ def gen_add_params():
     
 def gen_allvars():
 
-    lines = ''.join(open( 'allvars.h' ).readlines())
+    lines = ''.join(open( os.path.join(work_dir, 'allvars.h') ).readlines())
     
     i, j = re.search( 'extern_start.*extern_end', lines, re.DOTALL ).span()
     s = lines[i:j]
     s = s.split( 'extern' )
-    f = open( 'allvars.c', 'w' )
+    f = open( os.path.join(work_dir, 'allvars.c'), 'w' )
     f.write( '#include "allvars.h"\n\n' )
     for l in s:
         if ';' in l:
@@ -160,22 +163,21 @@ def make_protos():
     
     from os import listdir
 
-    fs = listdir( '.' )
+    fs = listdir( work_dir )
 
     #s = make_protos_single( "./check_flag.c" )
     #myprint( s )
     #exit()
 
-    ff = open( 'protos.h', 'w' )
+    ff = open( os.path.join(work_dir, 'protos.h'), 'w' )
     ff.write( "#include \"hdf5.h\"\n\n" )
     for f in fs:
         if f[-2:] != ".c":
             continue
 
-        #print( f )
         info = '//%%------>>>>>>file : %s\n//%%\n'%f
         ff.write( info )
-        s = make_protos_single( f )
+        s = make_protos_single( os.path.join( work_dir, f ) )
 
         for l in s:
             ff.write( "%s\n"%l )
@@ -183,20 +185,14 @@ def make_protos():
     ff.close()
 
 def main():
-    if len(sys.argv) == 1:
-        gen_allvars()
-        make_protos()
-        gen_add_params()
-        return
-    flag = int( sys.argv[1] )
-
-    if flag == 1:
-        gen_allvars()
-
-    if flag == 2:
-        gen_add_params()
-
-    if flag == 3:
-        make_protos()
+    
+    global work_dir
+    work_dir = os.path.split(os.path.realpath(sys.argv[0]))[0]
+    print( "generates add_params.h ..." )
+    gen_add_params()
+    print( "generates allvars.c ..." )
+    gen_allvars()
+    print( "generates protos.h ..." )
+    make_protos()
 
 main()
