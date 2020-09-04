@@ -65,6 +65,3 @@
 #define put_end( _flag ) {\
     writelog( _flag, ">>> end `%s`\n", __FUNCTION__ );\
 }
-
-#define printf1( a ) writelog( 0, "%-20s: %i\n", #a, a )
-#define printf2( a ) writelog( 0, "%-20s: %g\n", #a, a )

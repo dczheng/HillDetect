@@ -19,6 +19,10 @@
 #include "protos.h"
 #include "fitsio.h"
 #include "hdf5.h"
+#include "float.h"
+#include "gsl/gsl_math.h"
+#include "gsl/gsl_interp2d.h"
+#include "gsl/gsl_spline2d.h"
 
 #define MYFILENAME_MAX 100
 #define SEP_LEN  50
@@ -32,8 +36,12 @@ typedef struct GlobalParams {
          SigmaClipping1,
          DataCutting, PeakCenterFlag,
          LsetPixMin, SecondFinderPixMin, OnlyFoFPixMin,
+         BkgEstGridM, BkgEstGridN,
+         BkgEstm, BkgEstn,
+         BkgEstN, InterpMethod,
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
+            BkgEstRSigma,
             RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd, Beam; 
@@ -43,7 +51,7 @@ typedef struct GlobalParams {
 //extern_start
 extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
-              SigmaClippingVmin;
+              SigmaClippingVmin, DataMin, DataMax, DataRawMin, DataRawMax, *Bkg_s, *Bkg;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             FileNum,

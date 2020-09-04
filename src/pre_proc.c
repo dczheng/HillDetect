@@ -43,6 +43,151 @@ void sigma_clipping( double sigma, double mean, int flag ) {
     SigmaClippingVmin = vcut;
 }
 
+void background_estimation() {
+
+    int i, j, ii, jj, w, h, m, n, N, GridN, GridM, i0, j0, k, flag, l, r;
+    double *d, RS, sigma, mean, v_invalid, vmin, vmax;
+    hsize_t h5_dims[2];
+    hid_t h5_f;
+    char buf[200], buf2[20];
+
+    m = All.BkgEstm;
+    n = All.BkgEstn;
+    N = All.BkgEstN;
+    RS = All.BkgEstRSigma;
+    GridN =  All.BkgEstGridN;
+    GridM =  All.BkgEstGridM;
+
+    if ( GridN == 0 )
+        GridN = n;
+    if ( GridM == 0 )
+        GridM = m;
+
+
+
+    printf( "BkgEstm: %i, BkgEstn: %i, BkgEstN: %i, BkgGridM: %i, BkgGridN: %i, BkgEstRSigma: %g\n",
+                m, n, N, GridM, GridN, RSigma);
+    w = WidthGlobal / GridM + 1;
+    h = HeightGlobal / GridN + 1;
+
+    printf( "Bkg Dim: %i x %i\n", w, h );
+
+    d = malloc( sizeof(double) * m * n );
+    Bkg_s = malloc( sizeof(double) * w * h );
+    Bkg = malloc( sizeof(double) * Npixs );
+
+    flag = 0;
+    v_invalid = DataRawMin / 100;
+
+    mytimer_start;
+    writelog( 0, "do clipping ...\n" );
+
+    for( i=0; i<h; i++ ) {
+        ii = i * GridM; 
+        for( j=0; j<w; j++ ) {
+            jj = j * GridN;
+            for( i0 = 0; i0 < m; i0++ )
+                for( j0 = 0; j0 < n; j0++ ) {
+                    l = ii + i0 - m/2;
+                    r = jj + j0 - n/2;
+                    if ( l < 0 || l > HeightGlobal-1 || r < 0 || r > WidthGlobal-1 )
+                        d[i0 * n + j0] = v_invalid;
+                    else
+                        d[i0 * n + j0] = DataRaw[ l * Width + r  ];
+                }
+            for( k=0; k<N; k++ ) {
+                get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
+                find_vmin_vmax( d, m*n, NULL, NULL, &vmin, &vmax );
+                //printf( "[%i] vmin: %.3e, vmax: %.3e, mean: %.3e, sigma: %.3e, [ %.3e, %.3e ]\n", k, vmin, vmax, mean, sigma,
+                 //       mean - RS * sigma, mean + RS * sigma);
+                //flag ++;
+                for( l=0; l<m*n; l++ ) {
+                    if ( d[l] > mean + RS * sigma || d[l] < mean - RS * sigma ) {
+                        d[l] = v_invalid;
+                        //printf( "ok\n" );
+                    }
+                }
+            }
+            get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
+            Bkg_s[ i * w + j ] = mean;
+        }
+    }
+
+    printf( "flag: %i\n", flag );
+    free(d);
+
+    mytimer;
+    writelog( 0, "do interpolation ...\n" );
+
+    if ( w != WidthGlobal && h != HeightGlobal ) {
+
+        const gsl_interp2d_type *L = gsl_interp2d_bilinear;
+        const gsl_interp2d_type *C = gsl_interp2d_bicubic;
+        double *xs, *ys;
+        gsl_spline2d *spline;
+
+
+        switch( All.InterpMethod ) {
+            case 0:
+                spline = gsl_spline2d_alloc(L, w, h);
+                break;
+            case 1:
+                spline = gsl_spline2d_alloc(C, w, h);
+                break;
+            default:
+                endrun("Failed to determine interpolation method !");
+        }
+
+        printf( "Interpolation Method: %s. \n", gsl_spline2d_name( spline ) );
+        sprintf( buf2, "%s", gsl_spline2d_name( spline ) );
+
+        gsl_interp_accel *xacc = gsl_interp_accel_alloc();
+        gsl_interp_accel *yacc = gsl_interp_accel_alloc();
+        xs = malloc( sizeof(double) * w );
+        ys = malloc( sizeof(double) * h );
+        for( i=0; i<w; i++ ) xs[i] = i * GridN;
+        for( i=0; i<h; i++ ) ys[i] = i * GridM;
+        gsl_spline2d_init(spline, xs, ys, Bkg_s, w, h);
+
+        for( i=0; i<HeightGlobal; i++ ) {
+            for( j=0; j<WidthGlobal; j++ ) {
+                //printf( "%i %i\n", i, j );
+                Bkg[i * WidthGlobal + j] = gsl_spline2d_eval(spline, j, i, xacc, yacc);
+            }
+        }
+
+        gsl_spline2d_free(spline);
+        gsl_interp_accel_free(xacc);
+        gsl_interp_accel_free(yacc);
+
+    }
+
+    mytimer;
+    mytimer_end;
+
+    find_vmin_vmax( Bkg, Npixs, NULL, NULL, &vmin, &vmax );
+    printf( "[BKG] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
+
+    sprintf( buf, "%s/bkg_%s.hdf5", All.OutputDir, buf2 );
+    h5_f = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+
+    h5_dims[0] = HeightGlobal;
+    h5_dims[1] = WidthGlobal;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "data", DataRaw );
+
+    h5_dims[0] = HeightGlobal;
+    h5_dims[1] = WidthGlobal;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg", Bkg );
+
+    h5_dims[0] = h;
+    h5_dims[1] = w;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg_s", Bkg_s );
+
+
+    H5Fclose( h5_f );
+}
+
+
 void data_cuting() {
 
     int i, j;

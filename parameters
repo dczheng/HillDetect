@@ -1,6 +1,6 @@
 Mu                             1
 Nu                             0 
-Tol                            1e-06
+Tol                            1e-05
 MaxIters                       10000
 Lambda1                        1 
 Lambda2                        1 
@@ -34,3 +34,12 @@ SecondFinderPad               2
 
 OnlyFoF                       0
 OnlyFoFPixMin                 0
+
+BkgEstm       10 
+BkgEstn       10 
+BkgEstGridM   10 
+BkgEstGridN   10 
+BkgEstN       5
+BkgEstRSigma  0.9 
+InterpMethod  0     # 0 for bilinear, 1 for bicubic
+

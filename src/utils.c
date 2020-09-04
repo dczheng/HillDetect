@@ -64,3 +64,31 @@ void get_mean_sigma_rms( double *data, int *flag, int N,
 
 }
 
+void find_vmin_vmax( double *d, int N, double *up, double *down, double *vmin, double *vmax ) {
+    int i;
+    *vmin = DBL_MAX;
+    *vmax = -DBL_MAX;
+    for( i=0; i<N; i++ ) {
+        if ( NULL != up && d[i] > *up ) continue;
+        if ( NULL != down && d[i] < *down ) continue;
+        *vmin = ( d[i] < *vmin ) ? d[i] : *vmin;
+        *vmax = ( d[i] > *vmax ) ? d[i] : *vmax;
+    }
+}
+
+void get_mean_sigma( double *data, int N, double *skip, double *mean, double *sigma ) {
+    int i, n;
+    n = *mean = *sigma = 0;
+    for( i=0; i<N; i++ ) {
+        if ( skip != NULL && data[i] == *skip ) continue;
+        *mean += data[i];
+        n++;
+    }
+    *mean /= n;
+
+    for( i=0; i<N; i++ ) {
+        if ( skip != NULL && data[i] == *skip ) continue;
+        *sigma += SQR( data[i] - *mean ) ;
+    }
+    *sigma = sqrt( *sigma / n );
+}

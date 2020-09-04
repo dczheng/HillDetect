@@ -8,6 +8,9 @@ HDF5_LIBS  = -lhdf5
 FFTW_INCL  = 
 FFTW_LIBS  =
 
+GSL_INCL   = 
+GSL_LIBS   = -lgsl -lgslcblas
+
 PYTHON    ?= $(shell which python3)
 
 LIBS       = $(GSL_LIBS) $(FITS_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) -lm

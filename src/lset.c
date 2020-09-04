@@ -185,19 +185,19 @@ void lset() {
     init_phi();
 
     get_c1_c2( &c1, &c2 );
-    for(Iter = 1; Iter <= MaxIters; Iter++)
-    {
+    for(Iter = 1; Iter <= MaxIters; Iter++) {
+
         PhiPtr = Phi;
         fPtr = Data;
         PhiDiffNorm = 0;
 
-        for(j = 0; j < Height; j++)
-        {
+        for(j = 0; j < Height; j++) {
+
             iu = (j == 0) ? 0 : -Width;
             id = (j == Height - 1) ? 0 : Width;
 
-            for(i = 0; i < Width; i++, PhiPtr++, fPtr++)
-            {
+            for(i = 0; i < Width; i++, PhiPtr++, fPtr++) {
+
                 il = (i == 0) ? 0 : -1;
                 ir = (i == Width - 1) ? 0 : 1;
 
@@ -240,7 +240,7 @@ void lset() {
         printf( "\r[%5i]  Delta: %e, c1: %e, c2: %e",
                   Iter, PhiDiffNorm, c1, c2 );
         fflush( stdout );
-       fflush( LOG_FILE );
+        fflush( LOG_FILE );
         save_line( Iter );
 
         if(Iter >= 2 && PhiDiffNorm <= PhiTol)
@@ -248,6 +248,7 @@ void lset() {
 
     }
     printf( "\n" ); 
+
     close_files_for_lset();
 
     lset_group_finder();
@@ -255,5 +256,6 @@ void lset() {
     free( edgex );
     free( edgey );
     free( Phi );
+
     put_end(0);
 }

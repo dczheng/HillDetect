@@ -12,8 +12,131 @@ import sys
 import os
 from astropy.io import fits
 
-param_file = sys.argv[1]
+sep = '-' * 50
+params = {} 
+data = {}
 
+def load_parameters( fn ):
+    lines = open( fn ).readlines()
+    global parmas
+    for l in lines:
+        ll = l.split()
+        if ll == []:
+            continue
+        params[ll[0]] = ll[1]
+
+def plot_lset():
+   
+    print( "plot lset ..." )
+
+    img = data['fits_img']
+
+    vmin = img[img>0].min()
+    vmax = img.max()
+    norm = mplc.LogNorm( vmin=vmin, vmax=vmax )
+
+    fig, axs = plt.subplots( 2,2, figsize=(2*5, 2*5) )
+
+    axs[0,0].imshow( img, norm=norm, cmap=cm.jet )
+    axs[0,1].imshow( img[data['mcut0']: data['mcut1'], data['ncut0']: data['ncut1']],\
+                    norm=norm, cmap=cm.jet )
+
+    lset_lines = h5py.File( "%s/lset_lines.hdf5"%params['data_dir'], 'r' )
+    iters = lset_lines.attrs[ 'iters' ]
+    print( "iters: %i"%iters )
+    line = lset_lines[ 'iter%i/line'%iters ][()]
+    y = line[0,:] - data['mcut0'] 
+    x = line[1,:] - data['ncut0'] 
+    axs[0,1].plot( x, y, 'b.', ms=0.1  )
+
+    fig.savefig( '%s/lset.png'%params['plot_dir'], dpi=300 )
+
+    return
+
+    iters = lset_lines.attrs[ 'iters' ]
+    print( "iters: %i"%iters )
+    line = lset_lines[ 'iter%i/line'%iters ][()]
+    y = line[0,:] - mcut0 
+    x = line[1,:] - ncut0
+    axs[0,1].plot( x, y, 'b.', ms=0.1  )
+
+    img = np.zeros( fits_dd.shape )
+    global Ngroup
+    for i in range(Ngroup):
+        g = maps[ '/Group%i'%i ]
+        m0, n0 = g.attrs[ 'CRPIX' ]
+        mm = g[ 'map' ]
+        m, n = mm.shape
+        m0 = m0 - mcut0
+        n0 = n0 - ncut0
+        img[ m0:m0+m, n0:n0+n ] = mm
+    axs[1,0].imshow( img, norm=norm, cmap=cm.jet )
+
+    fits_mask = fits_d.copy()
+    NN = fof_regs.attrs['Ngroup']
+    Ntot = 0
+    for i in range( NN ):
+        g = fof_regs[ 'Group%i'%i ]
+        Nreg = g.attrs[ 'NReg' ]
+        Ntot += Nreg
+        for j in range( Nreg ):
+            reg = g[ 'Reg%i'%j ]
+            xy = reg[ 'region' ]
+            fits_mask[ xy[0,:], xy[1,:] ] = fits_d.min() 
+
+    print( "Ngroup: %i Ntot: %i"%(NN, Ntot) )
+
+    #print( fits_mask.max(), fits_mask.min(), len(fits_mask[fits_mask>0]) )
+    img = axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
+    #plt.colorbar( img, ax=axs[1,1] )
+
+    fig.savefig( '%s/lset.png'%plot_output_dir,dpi=300 )
+    fits.writeto( '%s_mask.fits'%(fits_file[:-5]),\
+                data=fits_mask, header=fits_h, overwrite=True )
+
+def show_params():
+
+    global params
+
+    n = 0
+    for k in params:
+        if len(k) > n: n = len(k)
+    fmt = '%%-%is   %%s'%n
+    print( sep )
+    print( "HILLDETECT PARAMETERS:" )
+    for k in params:
+        print( fmt%(k, params[k]) )
+    print( sep )
+
+def main():
+   
+    global params, data
+
+    load_parameters( sys.argv[1] )
+    bname = os.path.basename( params['FileName'] )
+    params['plot_dir'] = os.path.join( params['OutputDir'], 'plot_' + bname )
+    params['data_dir'] = os.path.join( params['OutputDir'], bname )
+    show_params()
+
+    if not os.path.exists( params['plot_dir'] ):
+        os.makedirs( params['plot_dir'] )
+
+    data['fits_img'] = fits.open( params['FileName'] )[0].data
+    m, n = data['fits_img'].shape
+    data['mcut0'] = int( m * float(params['CuttingYStart']) )
+    data['mcut1'] = int( m * float(params['CuttingYEnd']) )
+    data['ncut0'] = int( n * float(params['CuttingXStart']) )
+    data['ncut1'] = int( n * float(params['CuttingXEnd']) )
+
+    plot_lset()
+
+
+
+if __name__ == '__main__':
+    main()
+
+exit()
+    
 ls = open( param_file ).readlines()
 for l in ls:
     ll = l.split()
@@ -60,18 +183,6 @@ print( fmt%( "CutYStart", str(CutYStart) ) )
 print( fmt%( "CutYEnd", str(CutYEnd) ) )
 
 
-if not os.path.exists( plot_output_dir ):
-    os.makedirs( plot_output_dir )
-
-hdu = fits.open( fits_file )[0]
-fits_h = hdu.header
-fits_d = hdu.data
-
-m, n = fits_d.shape
-mcut0 = int( m * CutYStart )
-mcut1 = int( m * CutYEnd )
-ncut0 = int( n * CutXStart )
-ncut1 = int( n * CutXEnd )
 
 if not onlyfof:
     fs =  [\
@@ -205,60 +316,6 @@ def plot_maps():
 
     fig.savefig( '%s/map.png'%plot_output_dir)
     fig1.savefig( '%s/map_after.png'%plot_output_dir )
-
-def plot_lset():
-    
-    print( "plot lset and make mask ..." )
-
-    vmin = fits_d[fits_d>0].min()
-    vmax = fits_d.max()
-    norm = mplc.LogNorm( vmin=vmin, vmax=vmax )
-
-    fig, axs = plt.subplots( 2,2, figsize=(2*5, 2*5) )
-    fits_dd = fits_d[ mcut0:mcut1, ncut0:ncut1 ]
-    axs[0,0].imshow( fits_d, norm=norm, cmap=cm.jet )
-    axs[0,1].imshow( fits_dd, norm=norm, cmap=cm.jet )
-
-    iters = lset_lines.attrs[ 'iters' ]
-    print( "iters: %i"%iters )
-    line = lset_lines[ 'iter%i/line'%iters ][()]
-    y = line[0,:] - mcut0 
-    x = line[1,:] - ncut0
-    axs[0,1].plot( x, y, 'b.', ms=0.1  )
-
-    img = np.zeros( fits_dd.shape )
-    global Ngroup
-    for i in range(Ngroup):
-        g = maps[ '/Group%i'%i ]
-        m0, n0 = g.attrs[ 'CRPIX' ]
-        mm = g[ 'map' ]
-        m, n = mm.shape
-        m0 = m0 - mcut0
-        n0 = n0 - ncut0
-        img[ m0:m0+m, n0:n0+n ] = mm
-    axs[1,0].imshow( img, norm=norm, cmap=cm.jet )
-
-    fits_mask = fits_d.copy()
-    NN = fof_regs.attrs['Ngroup']
-    Ntot = 0
-    for i in range( NN ):
-        g = fof_regs[ 'Group%i'%i ]
-        Nreg = g.attrs[ 'NReg' ]
-        Ntot += Nreg
-        for j in range( Nreg ):
-            reg = g[ 'Reg%i'%j ]
-            xy = reg[ 'region' ]
-            fits_mask[ xy[0,:], xy[1,:] ] = fits_d.min() 
-
-    print( "Ngroup: %i Ntot: %i"%(NN, Ntot) )
-
-    #print( fits_mask.max(), fits_mask.min(), len(fits_mask[fits_mask>0]) )
-    img = axs[1,1].imshow( fits_mask, norm=norm, cmap=cm.jet )
-    #plt.colorbar( img, ax=axs[1,1] )
-
-    fig.savefig( '%s/lset.png'%plot_output_dir,dpi=300 )
-    fits.writeto( '%s_mask.fits'%(fits_file[:-5]),\
-                data=fits_mask, header=fits_h, overwrite=True )
 
 if not onlyfof:
     plot_maps()

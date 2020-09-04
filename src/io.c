@@ -5,9 +5,14 @@
 
 #include "allvars.h"
 
+#define printf1( a ) writelog( 0, "%-20s: %i\n", #a, a )
+#define printf2( a ) writelog( 0, "%-20s: %g\n", #a, a )
+#define printf3( a, b ) writelog( 0, "%-20s: %s\n", a, b )
+
 void read_fits( char *fits_fn ) {
 
     int flag;
+    char buf[20];
     double vmin, vmax;
     put_start(0);
     fitsfile *ffp;
@@ -80,10 +85,13 @@ void read_fits( char *fits_fn ) {
     HeightGlobal = Height = naxes[1];
     NpixsGlobal = Npixs = naxes[0] * naxes[1];
 
+    sprintf( buf, "%i x %i", Width, Height );
+    printf3( "Dim", buf );
+
     //print_data( Data, 230, 290, 580, 640, 0 );
 
     flag = 0;
-    vmin = 1e100;
+    vmin = DBL_MAX;
     vmax = -vmin;
     for( i=0; i<Npixs; i++ ) {
         if ( isnan( Data[i] ) ) {
@@ -95,7 +103,6 @@ void read_fits( char *fits_fn ) {
     }
 
     writelog( 1, "vmin: %g, vmax: %g\n", vmin, vmax );
-
     if ( flag ) {
         writelog( 1, "HAVE NAN: set to vmin\n" );
         for( i=0; i<Npixs; i++ )
@@ -107,6 +114,12 @@ void read_fits( char *fits_fn ) {
     for( i=0; i<Npixs; i++ ) {
         DataRaw[i] = Data[i];
     }
+
+    find_vmin_vmax( Data, Npixs, NULL, NULL, &DataMin, &DataMax );
+    writelog( 0, "DataMin: %g, DataMax: %g\n", DataMin, DataMax );
+    find_vmin_vmax( DataRaw, Npixs, NULL, NULL, &DataRawMin, &DataRawMax );
+    writelog( 0, "DataRawMin: %g, DataRawMax: %g\n", DataRawMin, DataRawMax );
+
 
     //print_data( DataRaw, 230, 640, 580, 640, 0 );
     put_end(0);

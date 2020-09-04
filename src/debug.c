@@ -36,7 +36,7 @@ void output_data( char *fn ) {
     fd = fopen( fn, "w" );
     for( i=0; i<Height; i++ ) {
         for ( j=0; j<Width; j++ )
-            fprintf( fd, "%g ", Data[i*Height+j] );
+            fprintf( fd, "%g ", Data[i*Width+j] );
         fprintf( fd, "\n" );
     }
     fclose( fd );

@@ -30,7 +30,6 @@ void open_files_for_second_finder() {
     int Xs[2];
     hsize_t h5_dims[2];
 
-
     sprintf( buf, "%s/map.hdf5", All.OutputDir );
     h5_map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
  
@@ -48,7 +47,6 @@ void open_files_for_second_finder() {
     h5_dims[0] = 2;
     hdf5_write_attr_nd( h5_map, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
     hdf5_write_attr_nd( h5_map_after, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
-
 
     sprintf( buf,"%s/fof_regs.hdf5", All.OutputDir );
     h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
@@ -171,6 +169,9 @@ void run() {
     read_fits( All.FileName );
     put_sep(0);
 
+    background_estimation();
+
+    return;
     run_first_finder();
     put_sep(0);
 
