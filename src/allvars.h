@@ -25,6 +25,8 @@
 #include "gsl/gsl_spline2d.h"
 
 #define MYFILENAME_MAX 100
+#define MYFILENAME_MAX2 200
+#define MYFILENAME_MAX3 300
 #define SEP_LEN  50
 
 typedef struct GlobalParams {
@@ -38,10 +40,14 @@ typedef struct GlobalParams {
          LsetPixMin, SecondFinderPixMin, OnlyFoFPixMin,
          BkgEstGridM, BkgEstGridN,
          BkgEstm, BkgEstn,
-         BkgEstN, InterpMethod,
+         BkgEstN, BkgEstInterpMethod,
+         NoiseEstGridM, NoiseEstGridN,
+         NoiseEstm, NoiseEstn,
+         NoiseEstN, NoiseEstInterpMethod,
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             BkgEstRSigma,
+            NoiseEstRSigma,
             RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
             CuttingYStart, CuttingYEnd, Beam; 
@@ -51,7 +57,9 @@ typedef struct GlobalParams {
 //extern_start
 extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
-              SigmaClippingVmin, DataMin, DataMax, DataRawMin, DataRawMax, *Bkg_s, *Bkg;
+              SigmaClippingVmin, DataMin, DataMax, DataRawMin, DataRawMax,
+              *Bkg_s, *Bkg,
+              *Noise_s, *Noise;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             FileNum,

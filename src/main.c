@@ -170,6 +170,7 @@ void run() {
     put_sep(0);
 
     background_estimation();
+    noise_estimation();
 
     return;
     run_first_finder();

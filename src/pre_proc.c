@@ -43,20 +43,127 @@ void sigma_clipping( double sigma, double mean, int flag ) {
     SigmaClippingVmin = vcut;
 }
 
+void noise_estimation() {
+
+    double vmin, vmax;
+    int h, w;
+    hid_t h5_f;
+    hsize_t h5_dims[2];
+    char fn[MYFILENAME_MAX3], fn_prefix[MYFILENAME_MAX2];
+
+    switch( All.NoiseEstInterpMethod ) {
+        case 0:
+            sprintf( fn_prefix, "%s/noise_bilinear", All.OutputDir );
+            break;
+        case 1:
+            sprintf( fn_prefix, "%s/noise_bicubic", All.OutputDir );
+            break;
+        default:
+            endrun("Failed to determine interpolation method !");
+    }
+
+    sprintf( fn, "%s.hdf5", fn_prefix );
+    h5_f = H5Fcreate( fn, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_dims[0] = Height;
+    h5_dims[1] = Width;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise", Data );
+
+    writelog( 0, "start noise estimation.\n" );
+
+    bkg_or_noise( Data, Width, Height, 
+                All.NoiseEstm, All.NoiseEstn, All.NoiseEstN,
+                All.NoiseEstGridM, All.NoiseEstGridN,
+                All.NoiseEstInterpMethod, All.NoiseEstRSigma,
+                &Noise_s, &h, &w, &Noise );
+
+    printf( "Noise Dim: %i x %i\n", w, h );
+    find_vmin_vmax( Noise, Npixs, NULL, NULL, &vmin, &vmax );
+    printf( "[Noise] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "noise", Noise );
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src", Data );
+
+    sprintf( fn, "%s_noise.fits", fn_prefix );
+    write_fits( fn, Width, Height, Noise );
+
+    sprintf( fn, "%s_src.fits", fn_prefix );
+    write_fits( fn, Width, Height, Data );
+
+    h5_dims[0] = h;
+    h5_dims[1] = w;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "noise_s", Noise_s );
+
+    sprintf( fn, "%s_noise_s.fits", fn_prefix );
+    write_fits( fn, w, h, Noise_s );
+
+    H5Fclose( h5_f );
+}
+
 void background_estimation() {
 
-    int i, j, ii, jj, w, h, m, n, N, GridN, GridM, i0, j0, k, flag, l, r;
-    double *d, RS, sigma, mean, v_invalid, vmin, vmax;
-    hsize_t h5_dims[2];
+    double vmin, vmax;
+    int h, w;
     hid_t h5_f;
-    char buf[200], buf2[20];
+    hsize_t h5_dims[2];
+    char fn[MYFILENAME_MAX3], fn_prefix[MYFILENAME_MAX2];
 
-    m = All.BkgEstm;
-    n = All.BkgEstn;
-    N = All.BkgEstN;
-    RS = All.BkgEstRSigma;
-    GridN =  All.BkgEstGridN;
-    GridM =  All.BkgEstGridM;
+    switch( All.BkgEstInterpMethod ) {
+        case 0:
+            sprintf( fn_prefix, "%s/bkg_bilinear", All.OutputDir );
+            break;
+        case 1:
+            sprintf( fn_prefix, "%s/bkg_bicubic", All.OutputDir );
+            break;
+        default:
+            endrun("Failed to determine interpolation method !");
+    }
+
+    sprintf( fn, "%s.hdf5", fn_prefix );
+    h5_f = H5Fcreate( fn, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_dims[0] = Height;
+    h5_dims[1] = Width;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise_bkg", Data );
+
+    sprintf( fn, "%s_src_noise_bkg.fits", fn_prefix );
+    write_fits( fn, Width, Height, Data );
+
+    writelog( 0, "start background estimation.\n" );
+
+    bkg_or_noise( Data, Width, Height, 
+                All.BkgEstm, All.BkgEstn, All.BkgEstN,
+                All.BkgEstGridM, All.BkgEstGridN,
+                All.BkgEstInterpMethod, All.BkgEstRSigma,
+                &Bkg_s, &h, &w, &Bkg );
+
+    printf( "Bkg Dim: %i x %i\n", w, h );
+    find_vmin_vmax( Bkg, Npixs, NULL, NULL, &vmin, &vmax );
+    printf( "[BKG] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg", Bkg );
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise", Data );
+
+    sprintf( fn, "%s_bkg.fits", fn_prefix );
+    write_fits( fn, Width, Height, Bkg );
+
+    sprintf( fn, "%s_src_noise.fits", fn_prefix );
+    write_fits( fn, Width, Height, Data );
+
+    h5_dims[0] = h;
+    h5_dims[1] = w;
+    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg_s", Bkg_s );
+
+    sprintf( fn, "%s_bkg_s.fits", fn_prefix );
+    write_fits( fn, w, h, Bkg_s );
+
+    H5Fclose( h5_f );
+}
+
+void bkg_or_noise( double *data, int W, int H, 
+                int m, int n, int N,
+                int GridM, int GridN,
+                int method, double RS,
+                double **out_s, int *h, int *w, double **out ) {
+
+    int i, j, ii, jj, i0, j0, k, l, r;
+    double *d, sigma, mean, v_invalid;
 
     if ( GridN == 0 )
         GridN = n;
@@ -64,62 +171,53 @@ void background_estimation() {
         GridM = m;
 
 
-
-    printf( "BkgEstm: %i, BkgEstn: %i, BkgEstN: %i, BkgGridM: %i, BkgGridN: %i, BkgEstRSigma: %g\n",
-                m, n, N, GridM, GridN, RSigma);
-    w = WidthGlobal / GridM + 1;
-    h = HeightGlobal / GridN + 1;
-
-    printf( "Bkg Dim: %i x %i\n", w, h );
+    *w = W / GridM + 1;
+    *h = H / GridN + 1;
 
     d = malloc( sizeof(double) * m * n );
-    Bkg_s = malloc( sizeof(double) * w * h );
-    Bkg = malloc( sizeof(double) * Npixs );
+    *out_s = malloc( sizeof(double) * (*w) * (*h) );
+    *out = malloc( sizeof(double) * W * H );
 
-    flag = 0;
     v_invalid = DataRawMin / 100;
 
     mytimer_start;
     writelog( 0, "do clipping ...\n" );
 
-    for( i=0; i<h; i++ ) {
+    for( i=0; i<*h; i++ ) {
         ii = i * GridM; 
-        for( j=0; j<w; j++ ) {
+        for( j=0; j<*w; j++ ) {
             jj = j * GridN;
             for( i0 = 0; i0 < m; i0++ )
                 for( j0 = 0; j0 < n; j0++ ) {
                     l = ii + i0 - m/2;
                     r = jj + j0 - n/2;
-                    if ( l < 0 || l > HeightGlobal-1 || r < 0 || r > WidthGlobal-1 )
+                    if ( l < 0 || l > H-1 || r < 0 || r > W-1 )
                         d[i0 * n + j0] = v_invalid;
                     else
-                        d[i0 * n + j0] = DataRaw[ l * Width + r  ];
+                        d[i0 * n + j0] = data[ l * Width + r  ];
                 }
             for( k=0; k<N; k++ ) {
                 get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
-                find_vmin_vmax( d, m*n, NULL, NULL, &vmin, &vmax );
-                //printf( "[%i] vmin: %.3e, vmax: %.3e, mean: %.3e, sigma: %.3e, [ %.3e, %.3e ]\n", k, vmin, vmax, mean, sigma,
-                 //       mean - RS * sigma, mean + RS * sigma);
-                //flag ++;
+                if ( mean == v_invalid )
+                    break;
+
                 for( l=0; l<m*n; l++ ) {
                     if ( d[l] > mean + RS * sigma || d[l] < mean - RS * sigma ) {
                         d[l] = v_invalid;
-                        //printf( "ok\n" );
                     }
                 }
             }
             get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
-            Bkg_s[ i * w + j ] = mean;
+            (*out_s)[ i * (*w) + j ] = mean;
         }
     }
 
-    printf( "flag: %i\n", flag );
     free(d);
-
     mytimer;
+
     writelog( 0, "do interpolation ...\n" );
 
-    if ( w != WidthGlobal && h != HeightGlobal ) {
+    if ( *w != W && *h != H ) {
 
         const gsl_interp2d_type *L = gsl_interp2d_bilinear;
         const gsl_interp2d_type *C = gsl_interp2d_bicubic;
@@ -127,64 +225,45 @@ void background_estimation() {
         gsl_spline2d *spline;
 
 
-        switch( All.InterpMethod ) {
+        switch( method ) {
             case 0:
-                spline = gsl_spline2d_alloc(L, w, h);
+                spline = gsl_spline2d_alloc(L, *w, *h);
                 break;
             case 1:
-                spline = gsl_spline2d_alloc(C, w, h);
+                spline = gsl_spline2d_alloc(C, *w, *h);
                 break;
             default:
                 endrun("Failed to determine interpolation method !");
         }
 
         printf( "Interpolation Method: %s. \n", gsl_spline2d_name( spline ) );
-        sprintf( buf2, "%s", gsl_spline2d_name( spline ) );
 
         gsl_interp_accel *xacc = gsl_interp_accel_alloc();
         gsl_interp_accel *yacc = gsl_interp_accel_alloc();
-        xs = malloc( sizeof(double) * w );
-        ys = malloc( sizeof(double) * h );
-        for( i=0; i<w; i++ ) xs[i] = i * GridN;
-        for( i=0; i<h; i++ ) ys[i] = i * GridM;
-        gsl_spline2d_init(spline, xs, ys, Bkg_s, w, h);
+        xs = malloc( sizeof(double) * (*w) );
+        ys = malloc( sizeof(double) * (*h) );
+        for( i=0; i<*w; i++ ) xs[i] = i * GridN;
+        for( i=0; i<*h; i++ ) ys[i] = i * GridM;
+        gsl_spline2d_init(spline, xs, ys, *out_s, *w, *h);
 
-        for( i=0; i<HeightGlobal; i++ ) {
-            for( j=0; j<WidthGlobal; j++ ) {
+        for( i=0; i<H; i++ ) {
+            for( j=0; j<W; j++ ) {
                 //printf( "%i %i\n", i, j );
-                Bkg[i * WidthGlobal + j] = gsl_spline2d_eval(spline, j, i, xacc, yacc);
+                (*out)[i * W + j] = gsl_spline2d_eval(spline, j, i, xacc, yacc);
             }
         }
 
         gsl_spline2d_free(spline);
         gsl_interp_accel_free(xacc);
         gsl_interp_accel_free(yacc);
-
     }
+
+    for( i=0; i<W*H; i++ )
+        data[i] = data[i] - (*out)[i];
 
     mytimer;
     mytimer_end;
 
-    find_vmin_vmax( Bkg, Npixs, NULL, NULL, &vmin, &vmax );
-    printf( "[BKG] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
-
-    sprintf( buf, "%s/bkg_%s.hdf5", All.OutputDir, buf2 );
-    h5_f = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
-
-    h5_dims[0] = HeightGlobal;
-    h5_dims[1] = WidthGlobal;
-    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "data", DataRaw );
-
-    h5_dims[0] = HeightGlobal;
-    h5_dims[1] = WidthGlobal;
-    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg", Bkg );
-
-    h5_dims[0] = h;
-    h5_dims[1] = w;
-    hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg_s", Bkg_s );
-
-
-    H5Fclose( h5_f );
 }
 
 

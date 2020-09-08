@@ -84,6 +84,13 @@ void get_mean_sigma( double *data, int N, double *skip, double *mean, double *si
         *mean += data[i];
         n++;
     }
+
+    if ( n == 0 ) {
+        *mean = *skip;
+        *sigma = 0;
+        return;
+    }
+
     *mean /= n;
 
     for( i=0; i<N; i++ ) {

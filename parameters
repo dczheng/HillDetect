@@ -35,11 +35,19 @@ SecondFinderPad               2
 OnlyFoF                       0
 OnlyFoFPixMin                 0
 
-BkgEstm       10 
-BkgEstn       10 
-BkgEstGridM   10 
-BkgEstGridN   10 
-BkgEstN       5
+BkgEstm       15 
+BkgEstn       15 
+BkgEstGridM   5 
+BkgEstGridN   5 
+BkgEstN       4
 BkgEstRSigma  0.9 
-InterpMethod  0     # 0 for bilinear, 1 for bicubic
+BkgEstInterpMethod  1       # 0 for bilinear, 1 for bicubic
+
+NoiseEstm       15 
+NoiseEstn       15 
+NoiseEstGridM   5 
+NoiseEstGridN   5 
+NoiseEstN       5 
+NoiseEstRSigma  0.9 
+NoiseEstInterpMethod  1     # 0 for bilinear, 1 for bicubic
 
