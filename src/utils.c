@@ -76,12 +76,22 @@ void find_vmin_vmax( double *d, int N, double *up, double *down, double *vmin, d
     }
 }
 
-void get_mean_sigma( double *data, int N, double *skip, double *mean, double *sigma ) {
+int get_mean_sigma_comp( const void *a, const void *b ) {
+    if ( *((double*)a) > *((double*)b) )
+        return -1;
+    else
+        return 1;
+}
+
+void get_mean_sigma( double *data, int N, double *skip, double *mean, double *sigma, double *median, double *buf ) {
     int i, n;
     n = *mean = *sigma = 0;
+    *median = *skip;
     for( i=0; i<N; i++ ) {
         if ( skip != NULL && data[i] == *skip ) continue;
         *mean += data[i];
+        if ( NULL != buf )
+            buf[n] = data[i];
         n++;
     }
 
@@ -92,6 +102,30 @@ void get_mean_sigma( double *data, int N, double *skip, double *mean, double *si
     }
 
     *mean /= n;
+
+    //printf( "[1]" );
+    //for( i=0; i<n; i++ )
+    //    printf( "%g ", buf[i] );
+    //printf( "\n[2]" );
+    if ( NULL != buf ) {
+        qsort(buf, n, sizeof(double), &get_mean_sigma_comp);
+        *median = buf[n/2];
+    }
+
+    //for( i=0; i<n; i++ ) {
+    //    if ( i > 0 ) {
+    //        if ( buf[i] >= buf[i-1] )
+    //            printf( "1" );
+    //        else
+    //            printf( "0" );
+    //    }
+    //    //printf( "%g ", buf[i] );
+    //}
+    //printf( "\n%g\n", *median );
+    //
+    /*
+    endrun("1");
+     */
 
     for( i=0; i<N; i++ ) {
         if ( skip != NULL && data[i] == *skip ) continue;

@@ -70,10 +70,9 @@ void noise_estimation() {
 
     writelog( 0, "start noise estimation.\n" );
 
-    bkg_or_noise( Data, Width, Height, 
-                All.NoiseEstm, All.NoiseEstn, All.NoiseEstN,
+    bkg_or_noise( All.NoiseEstm, All.NoiseEstn, All.NoiseEstN,
                 All.NoiseEstGridM, All.NoiseEstGridN,
-                All.NoiseEstInterpMethod, All.NoiseEstRSigma,
+                All.NoiseEstInterpMethod, All.NoiseEstRSigma, All.NoiseEstMedian,
                 &Noise_s, &h, &w, &Noise );
 
     printf( "Noise Dim: %i x %i\n", w, h );
@@ -128,10 +127,9 @@ void background_estimation() {
 
     writelog( 0, "start background estimation.\n" );
 
-    bkg_or_noise( Data, Width, Height, 
-                All.BkgEstm, All.BkgEstn, All.BkgEstN,
+    bkg_or_noise( All.BkgEstm, All.BkgEstn, All.BkgEstN,
                 All.BkgEstGridM, All.BkgEstGridN,
-                All.BkgEstInterpMethod, All.BkgEstRSigma,
+                All.BkgEstInterpMethod, All.BkgEstRSigma, All.BkgEstMedian,
                 &Bkg_s, &h, &w, &Bkg );
 
     printf( "Bkg Dim: %i x %i\n", w, h );
@@ -156,29 +154,35 @@ void background_estimation() {
     H5Fclose( h5_f );
 }
 
-void bkg_or_noise( double *data, int W, int H, 
-                int m, int n, int N,
+void bkg_or_noise(  int m, int n, int N,
                 int GridM, int GridN,
-                int method, double RS,
+                int method, double RS, int median_flag,
                 double **out_s, int *h, int *w, double **out ) {
 
-    int i, j, ii, jj, i0, j0, k, l, r;
-    double *d, sigma, mean, v_invalid;
+    int i, j, ii, jj, i0, j0, k, l, r, W, H;
+    double *d, sigma, mean, v_invalid, *data, median, *buf;
 
     if ( GridN == 0 )
         GridN = n;
     if ( GridM == 0 )
         GridM = m;
 
+    W = Width;
+    H = Height;
+    data = Data;
 
-    *w = W / GridM + 1;
-    *h = H / GridN + 1;
+    *w = W / GridN + 1;
+    *h = H / GridM + 1;
 
     d = malloc( sizeof(double) * m * n );
+    buf = NULL;
+    if ( median_flag )
+        buf = malloc( sizeof(double) * m * n );
     *out_s = malloc( sizeof(double) * (*w) * (*h) );
     *out = malloc( sizeof(double) * W * H );
 
-    v_invalid = DataRawMin / 100;
+    v_invalid = DataMin / 1e5;
+    writelog( 0, "Global Vmin: %g, V_Invalid: %g\n", DataMin, v_invalid );
 
     mytimer_start;
     writelog( 0, "do clipping ...\n" );
@@ -194,25 +198,37 @@ void bkg_or_noise( double *data, int W, int H,
                     if ( l < 0 || l > H-1 || r < 0 || r > W-1 )
                         d[i0 * n + j0] = v_invalid;
                     else
-                        d[i0 * n + j0] = data[ l * Width + r  ];
+                        d[i0 * n + j0] = data[ l * W + r  ];
                 }
             for( k=0; k<N; k++ ) {
-                get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
+                get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma, &median, buf );
                 if ( mean == v_invalid )
                     break;
 
                 for( l=0; l<m*n; l++ ) {
-                    if ( d[l] > mean + RS * sigma || d[l] < mean - RS * sigma ) {
-                        d[l] = v_invalid;
+                    if ( median_flag ) {
+                        if ( d[l] > median + RS * sigma || d[l] < median - RS * sigma ) {
+                            d[l] = v_invalid;
+                        }
+                    }
+                    else {
+                        if ( d[l] > mean + RS * sigma || d[l] < mean - RS * sigma ) {
+                            d[l] = v_invalid;
+                        }
                     }
                 }
             }
-            get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma );
-            (*out_s)[ i * (*w) + j ] = mean;
+            get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma, &median, buf );
+            if ( median_flag )
+                (*out_s)[ i * (*w) + j ] = median;
+            else
+                (*out_s)[ i * (*w) + j ] = mean;
         }
     }
 
     free(d);
+    if ( median_flag )
+        free(buf);
     mytimer;
 
     writelog( 0, "do interpolation ...\n" );
@@ -260,6 +276,7 @@ void bkg_or_noise( double *data, int W, int H,
 
     for( i=0; i<W*H; i++ )
         data[i] = data[i] - (*out)[i];
+    find_vmin_vmax( Data, Npixs, NULL, NULL, &DataMin, &DataMax );
 
     mytimer;
     mytimer_end;

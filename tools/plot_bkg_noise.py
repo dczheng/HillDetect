@@ -46,13 +46,15 @@ fig, axs = plt.subplots( 2, 4, figsize=(4*5, 2*5) )
 data_name = bkg_data_name + noi_data_name
 
 d = data['src_noise_bkg']
-vmin = d[d>0].min()
+vmin = d.min()
 vmax = d.max()
-norm = mplc.LogNorm( vmin=vmin, vmax=vmax )
 
 for i in range(len(data_name)):
     print( 'plot %s ...'%data_name[i] )
     ax = axs[ i//4, i%4 ]
+    vmin = data[data_name[i]].min()
+    vmax = data[data_name[i]].max()
+    norm = mplc.SymLogNorm( 1e-9, vmin=vmin, vmax=vmax )
     img = ax.imshow( data[data_name[i]], norm=norm )
     plt.colorbar( img, ax=ax, shrink=0.8  )
 

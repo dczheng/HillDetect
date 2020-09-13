@@ -40,9 +40,11 @@ typedef struct GlobalParams {
          LsetPixMin, SecondFinderPixMin, OnlyFoFPixMin,
          BkgEstGridM, BkgEstGridN,
          BkgEstm, BkgEstn,
+         BkgEstMedian,
          BkgEstN, BkgEstInterpMethod,
          NoiseEstGridM, NoiseEstGridN,
          NoiseEstm, NoiseEstn,
+         NoiseEstMedian,
          NoiseEstN, NoiseEstInterpMethod,
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
