@@ -171,8 +171,14 @@ void bkg_or_noise(  int m, int n, int N,
     H = Height;
     data = Data;
 
-    *w = W / GridN + 1;
-    *h = H / GridM + 1;
+    if ( GridN == 1 )
+        *w = W;
+    else
+        *w = W / GridN + 1;
+    if ( GridM == 1 )
+        *h = H;
+    else
+        *h = H / GridM + 1;
 
     d = malloc( sizeof(double) * m * n );
     buf = NULL;
@@ -233,7 +239,7 @@ void bkg_or_noise(  int m, int n, int N,
 
     writelog( 0, "do interpolation ...\n" );
 
-    if ( *w != W && *h != H ) {
+    if ( GridN != 1 || GridM != 1 ) {
 
         const gsl_interp2d_type *L = gsl_interp2d_bilinear;
         const gsl_interp2d_type *C = gsl_interp2d_bicubic;
@@ -272,6 +278,10 @@ void bkg_or_noise(  int m, int n, int N,
         gsl_spline2d_free(spline);
         gsl_interp_accel_free(xacc);
         gsl_interp_accel_free(yacc);
+    }
+    else {
+        for( i=0; i<W*H; i++ )
+            (*out)[i] = (*out_s)[i];
     }
 
     for( i=0; i<W*H; i++ )

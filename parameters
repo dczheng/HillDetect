@@ -7,9 +7,9 @@ Lambda2                        1
 TimeStep                       0.1
 LogNorm                        1
 
-FileName                       ./data/source_bkg.fits
+%FileName                       ./data/source_bkg.fits
 %FileName                       ./data/bkg.fits
-%FileName                       ./data/source1bkg1032.fits
+FileName                       ./data/source1bkg1032.fits
 OutputDir                      ./outputs
 
 
@@ -37,21 +37,21 @@ SecondFinderPad               2
 OnlyFoF                       0
 OnlyFoFPixMin                 0
 
-BkgEstm       10 
-BkgEstn       10 
-BkgEstGridM   20 
-BkgEstGridN   20  
+BkgEstm       90 
+BkgEstn       90 
+BkgEstGridM   15 
+BkgEstGridN   15      
 BkgEstN       3 
-BkgEstMedian   1
+BkgEstMedian   0
 BkgEstRSigma   3 
 BkgEstInterpMethod  0       # 0 for bilinear, 1 for bicubic
 
-NoiseEstm       30 
-NoiseEstn       30 
-NoiseEstGridM   30 
-NoiseEstGridN   30 
+NoiseEstm       10 
+NoiseEstn       10 
+NoiseEstGridM   10 
+NoiseEstGridN   10 
 NoiseEstMedian     0
 NoiseEstN       3 
-NoiseEstRSigma  0.9 
+NoiseEstRSigma  3 
 NoiseEstInterpMethod  0     # 0 for bilinear, 1 for bicubic
 
