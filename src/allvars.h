@@ -49,6 +49,7 @@ typedef struct GlobalParams {
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             BkgEstRSigma,
+            VInvalid,
             NoiseEstRSigma,
             RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
@@ -61,7 +62,7 @@ extern char sep_str[SEP_LEN];
 extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
               SigmaClippingVmin, DataMin, DataMax, DataRawMin, DataRawMax,
               *Bkg_s, *Bkg,
-              *Noise_s, *Noise;
+              *Noise_s, *Noise, VInvalid;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
             FileNum,

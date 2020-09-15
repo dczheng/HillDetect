@@ -160,7 +160,7 @@ void bkg_or_noise(  int m, int n, int N,
                 double **out_s, int *h, int *w, double **out ) {
 
     int i, j, ii, jj, i0, j0, k, l, r, W, H;
-    double *d, sigma, mean, v_invalid, *data, median, *buf;
+    double *d, sigma, mean, *data, median, *buf, S;
 
     if ( GridN == 0 )
         GridN = n;
@@ -187,12 +187,10 @@ void bkg_or_noise(  int m, int n, int N,
     *out_s = malloc( sizeof(double) * (*w) * (*h) );
     *out = malloc( sizeof(double) * W * H );
 
-    v_invalid = DataMin / 1e5;
-    writelog( 0, "Global Vmin: %g, V_Invalid: %g\n", DataMin, v_invalid );
-
     mytimer_start;
     writelog( 0, "do clipping ...\n" );
 
+    get_mean_sigma( data, W*H, &VInvalid, &mean, &S, &median, buf );
     for( i=0; i<*h; i++ ) {
         ii = i * GridM; 
         for( j=0; j<*w; j++ ) {
@@ -202,29 +200,32 @@ void bkg_or_noise(  int m, int n, int N,
                     l = ii + i0 - m/2;
                     r = jj + j0 - n/2;
                     if ( l < 0 || l > H-1 || r < 0 || r > W-1 )
-                        d[i0 * n + j0] = v_invalid;
+                        d[i0 * n + j0] = VInvalid;
                     else
                         d[i0 * n + j0] = data[ l * W + r  ];
                 }
             for( k=0; k<N; k++ ) {
-                get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma, &median, buf );
-                if ( mean == v_invalid )
+                get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
+                if ( mean == VInvalid)
                     break;
+
+                if (  sigma > S )
+                    sigma =  S;
 
                 for( l=0; l<m*n; l++ ) {
                     if ( median_flag ) {
                         if ( d[l] > median + RS * sigma || d[l] < median - RS * sigma ) {
-                            d[l] = v_invalid;
+                            d[l] = VInvalid;
                         }
                     }
                     else {
                         if ( d[l] > mean + RS * sigma || d[l] < mean - RS * sigma ) {
-                            d[l] = v_invalid;
+                            d[l] = VInvalid;
                         }
                     }
                 }
             }
-            get_mean_sigma( d, m*n, &v_invalid, &mean, &sigma, &median, buf );
+            get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
             if ( median_flag )
                 (*out_s)[ i * (*w) + j ] = median;
             else
