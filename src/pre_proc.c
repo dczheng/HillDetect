@@ -568,20 +568,20 @@ void bkg_fitting(){
 
     mytimer_start;
     int an, pn, i, j, idx, ii, jj, k, m, n, sign;
-    gsl_matrix *X, *XT, *XTX, *XTX_inv, *tmp, *beta, *XTy;
-    double *xs, *ys, s, t, a, b;
+    gsl_matrix *XTX, *XTX_inv, *tmp;
+    double *xs, *ys, s, t, a, b, *xt, *xty, *as;
     gsl_permutation *pm;
 
     pn = All.BkgFittingPolyOrder;
     an = ( pn + 2 ) * ( pn + 1 ) / 2;
 
-    X = gsl_matrix_alloc( Npixs, an );
-    XT = gsl_matrix_alloc( an, Npixs );
+    xt = malloc( sizeof(double) * Npixs * an );
+    xty = malloc( sizeof(double) * an );
+    as = malloc( sizeof(double) * an );
+
     XTX = gsl_matrix_alloc( an, an );
     XTX_inv = gsl_matrix_alloc( an, an );
     tmp = gsl_matrix_alloc( an, an );
-    XTy = gsl_matrix_alloc( an, 1 );
-    beta = gsl_matrix_alloc( an, 1 );
     pm = gsl_permutation_alloc(an);
 
     xs = (double*) malloc( sizeof( double ) * (pn+1) );
@@ -607,29 +607,18 @@ void bkg_fitting(){
             n = 0;
             for( ii=0; ii<pn+1; ii++ )
                 for( jj=0; jj<=ii; jj++ ) {
-                    gsl_matrix_set( X, m, n, xs[jj] * ys[ii-jj] );
+                    xt[ n * Npixs + m ] = xs[jj] * ys[ii-jj];
                     n++;
                 }
 
         }
     }
-    gsl_matrix_transpose_memcpy( XT, X );
-
-    /*
-    for( i=0; i<Npixs; i++ )
-        for( j=0; j<an; j++ )
-            printf( "(%i, %i): %g\n", i, j, gsl_matrix_get( X, i, j ) );
-    for( i=0; i<an; i++ )
-        for( j=0; j<Npixs; j++ )
-            printf( "(%i, %i): %g\n", i, j, gsl_matrix_get( XT, i, j ) );
-      */
 
     for( i=0; i<an; i++ )
         for( j=0; j<an; j++ ){
             s = 0;
             for( k=0; k<Npixs; k++ )
-                s += gsl_matrix_get( XT, i, k ) * gsl_matrix_get( XT, j, k );
-            //printf( "(%i, %i): %g\n", i, j, s );
+                s += xt[ i * Npixs + k ] * xt[ j * Npixs + k ];
             gsl_matrix_set( XTX, i, j, s );
         }
 
@@ -638,35 +627,19 @@ void bkg_fitting(){
     gsl_linalg_LU_decomp(tmp, pm, &sign);
     gsl_linalg_LU_invert(tmp, pm, XTX_inv);
 
-    /*
-    for( i=0; i<an; i++ ) {
-        for( j=0; j<an; j++ ){
-            s = 0;
-            for( k=0; k<an; k++ )
-                s += gsl_matrix_get( XTX_inv, i, k ) * gsl_matrix_get( XTX, k, j );
-            printf( "%.1e ", s );
-        }
-        printf( "\n" );
-    }
-      */
     for( i=0; i<an; i++ ) {
         s = 0;
         for( j=0; j<Npixs; j++ )
-            s += gsl_matrix_get( XT, i, j ) * DataRaw[j];
-        gsl_matrix_set( XTy, i, 0, s );
+            s += xt[ i * Npixs + j ] * DataRaw[j];
+        xty[i] = s;
     }
 
     for( i=0; i<an; i++ ) {
         s = 0;
         for( j=0; j<an; j++ ) 
-            s += gsl_matrix_get( XTX_inv, i, j ) * gsl_matrix_get( XTy, j, 0 );
-        gsl_matrix_set( beta, i, 0, s );
+            s += gsl_matrix_get( XTX_inv, i, j ) * xty[j];
+        as[i] = s;
     }
-
-    /*
-    for( i=0; i<an; i++ )
-        printf( "%g \n", gsl_matrix_get( beta, i, 0 ) );
-     * */
 
     Bkg = ( double * ) malloc( sizeof(double) * Npixs );
 
@@ -688,7 +661,7 @@ void bkg_fitting(){
             n = 0;
             for( ii=0; ii<pn+1; ii++ )
                 for( jj=0; jj<=ii; jj++ ) {
-                    s += xs[jj] * ys[ii-jj] * gsl_matrix_get( beta, n, 0 );
+                    s += xs[jj] * ys[ii-jj] * as[n];
                     n++;
                 }
             Bkg[m] = s;
@@ -697,13 +670,11 @@ void bkg_fitting(){
 
     write_fits( "bkg_fitting.fits", WidthGlobal, HeightGlobal, Bkg );
 
-
-    gsl_matrix_free( X );
-    gsl_matrix_free( XT );
+    free( xt );
+    free( xty );
+    free( as );
     gsl_matrix_free( XTX );
     gsl_matrix_free( XTX_inv );
-    gsl_matrix_free( XTy );
-    gsl_matrix_free( beta );
     gsl_matrix_free(tmp);
     gsl_permutation_free(pm);
     mytimer_end;

@@ -10,7 +10,8 @@ LogNorm                        1
 %FileName                       ./data/addbkg.fits
 %FileName                       ./data/ll800noise.fits
 SrcFileName                       ./data/src_bin.fits
-FileName                       ./data/source_bkg.fits
+%FileName                       ./data/source_bkg.fits
+FileName                       ./data/source1bkg1537s.fits
 %FileName                       ./data/bkg.fits
 %FileName                       ./data/source1bkg1032.fits
 OutputDir                      ./outputs
@@ -60,5 +61,5 @@ NoiseEstInterpMethod  0     # 0 for bilinear, 1 for bicubic
 
 VInvalid  1e-5
 
-BkgFittingPolyOrder   5 
+BkgFittingPolyOrder   7 
 
