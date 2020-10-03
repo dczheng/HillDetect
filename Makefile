@@ -16,7 +16,7 @@ PYTHON    ?= $(shell which python3)
 LIBS       = $(GSL_LIBS) $(FITS_LIBS) $(FFTW_LIBS) $(HDF5_LIBS) -lm
 INCL       = $(GSL_INCL) $(FITS_INCL) $(FFTW_INCL) $(HDF5_INCL) -I./src
 
-OPTS       = $(FITS_OPTS)  $(HDF5_OPTS) -Wall #-O2 #-O3
+OPTS       = $(FITS_OPTS)  $(HDF5_OPTS) -Wall #-O3 #-O2
 DEBUG     ?=
 CC         =  gcc 
 

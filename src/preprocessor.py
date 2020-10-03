@@ -172,6 +172,10 @@ def make_protos():
     ff = open( os.path.join(work_dir, 'protos.h'), 'w' )
     ff.write( "#include \"hdf5.h\"\n\n" )
     for f in fs:
+
+        if 'r8lib' in f:
+            continue
+
         if f[-2:] != ".c":
             continue
 

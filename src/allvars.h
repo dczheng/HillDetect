@@ -16,13 +16,19 @@
 #include "sys/stat.h"
 #include "macros.h"
 #include "libgen.h"
-#include "protos.h"
 #include "fitsio.h"
 #include "hdf5.h"
 #include "float.h"
 #include "gsl/gsl_math.h"
 #include "gsl/gsl_interp2d.h"
 #include "gsl/gsl_spline2d.h"
+#include "gsl/gsl_matrix.h"
+#include "gsl/gsl_vector.h"
+#include "gsl/gsl_blas.h"
+#include "gsl/gsl_permutation.h"
+#include "gsl/gsl_linalg.h"
+#include "stdbool.h"
+#include "protos.h"
 
 #define MYFILENAME_MAX 100
 #define MYFILENAME_MAX2 200
@@ -31,7 +37,8 @@
 
 typedef struct GlobalParams {
     char OutputDir[ MYFILENAME_MAX ],
-         FileName[ MYFILENAME_MAX ];
+         FileName[ MYFILENAME_MAX ],
+         SrcFileName[ MYFILENAME_MAX ];
 
     int  LogNorm, MaxIters,
          SigmaClipping,
@@ -46,6 +53,7 @@ typedef struct GlobalParams {
          NoiseEstm, NoiseEstn,
          NoiseEstMedian,
          NoiseEstN, NoiseEstInterpMethod,
+         BkgFittingPolyOrder, 
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             BkgEstRSigma,
@@ -59,15 +67,15 @@ typedef struct GlobalParams {
 
 //extern_start
 extern char sep_str[SEP_LEN];
-extern double *Data, *Phi, *DataRaw, CRVAL1, CRVAL2, CDELT1, CDELT2,
+extern double *Data, *Phi, *DataRaw, CDELT1, CDELT2,
               SigmaClippingVmin, DataMin, DataMax, DataRawMin, DataRawMax,
-              *Bkg_s, *Bkg,
+              *Bkg_s, *Bkg, *SrcData,
               *Noise_s, *Noise, VInvalid;
 extern int 
             Width, Height, WidthGlobal, HeightGlobal, NpixsGlobal,
-            FileNum,
+            FileNum, 
             *edgex, *edgey,
-            Npixs, edgen, XShift, YShift, CRPIX1, CRPIX2,
+            Npixs, edgen, XShift, YShift,
             HStartCut, HEndCut, WStartCut, WEndCut, CurGroup,
             *lset_Next, *lset_Head, *lset_Len, lset_Nreg, Nsource, Ngroup;
 

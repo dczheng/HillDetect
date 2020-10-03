@@ -238,8 +238,7 @@ void lset_group_finder_save() {
     data = malloc( sizeof(int) * Npixs * 2 );
     flux = malloc( sizeof(double) * Npixs );
 
-    sprintf( buf, "%s/lset_regs.hdf5", All.OutputDir  );
-    h5_f = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT  );
+    h5_f = hdf5_create( "lset_regs.hdf5" );
 
     h5_dims[0] = 2;
     Xs[0] = HStartCut;
@@ -390,7 +389,7 @@ void lset_group_finder_save() {
 
      }
 
-     H5Fclose( h5_f );
+     hdf5_close( h5_f );
     
      free(data);
      free(flux);

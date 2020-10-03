@@ -94,6 +94,7 @@ void get_mean_sigma( double *data, int N, double *skip, double *mean, double *si
             buf[n] = data[i];
         n++;
     }
+    //printf( "%i ", n );
 
     if ( n == 0 ) {
         *mean = *skip;
@@ -103,29 +104,10 @@ void get_mean_sigma( double *data, int N, double *skip, double *mean, double *si
 
     *mean /= n;
 
-    //printf( "[1]" );
-    //for( i=0; i<n; i++ )
-    //    printf( "%g ", buf[i] );
-    //printf( "\n[2]" );
     if ( NULL != buf ) {
         qsort(buf, n, sizeof(double), &get_mean_sigma_comp);
         *median = buf[n/2];
     }
-
-    //for( i=0; i<n; i++ ) {
-    //    if ( i > 0 ) {
-    //        if ( buf[i] >= buf[i-1] )
-    //            printf( "1" );
-    //        else
-    //            printf( "0" );
-    //    }
-    //    //printf( "%g ", buf[i] );
-    //}
-    //printf( "\n%g\n", *median );
-    //
-    /*
-    endrun("1");
-     */
 
     for( i=0; i<N; i++ ) {
         if ( skip != NULL && data[i] == *skip ) continue;

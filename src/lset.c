@@ -138,12 +138,12 @@ void open_files_for_lset() {
     char buf[120];
 
     sprintf( buf, "%s/lset_lines.hdf5", All.OutputDir );
-    f_lset_h5 = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT  );
+    f_lset_h5 = hdf5_create( "lset_lines.hdf5" );
 
 }
 
 void close_files_for_lset() {
-    H5Fclose( f_lset_h5  );
+    hdf5_close( f_lset_h5  );
 }
 
 #define DIVIDE_EPS 1e-16

@@ -30,11 +30,10 @@ void open_files_for_second_finder() {
     int Xs[2];
     hsize_t h5_dims[2];
 
-    sprintf( buf, "%s/map.hdf5", All.OutputDir );
-    h5_map = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_map = hdf5_create( "map.hdf5" );
  
     sprintf( buf, "%s/map_after.hdf5", All.OutputDir );
-    h5_map_after = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_map_after = hdf5_create( "map_after.hdf5" );
 
     Xs[0] = HStartCut;
     Xs[1] = WStartCut;
@@ -48,8 +47,7 @@ void open_files_for_second_finder() {
     hdf5_write_attr_nd( h5_map, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
     hdf5_write_attr_nd( h5_map_after, H5T_NATIVE_INT, h5_dims, 1, "CutEnd", Xs );
 
-    sprintf( buf,"%s/fof_regs.hdf5", All.OutputDir );
-    h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_fof = hdf5_create( "fof_regs.hdf5" );
 
     hdf5_write_attr_scalar( h5_map, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
     hdf5_write_attr_scalar( h5_map_after, H5T_NATIVE_INT, "Ngroup", &lset_Nreg );
@@ -57,9 +55,9 @@ void open_files_for_second_finder() {
 }
 
 void close_files_for_second_finder() {
-    H5Fclose( h5_map );
-    H5Fclose( h5_map_after );
-    H5Fclose( h5_fof );
+    hdf5_close( h5_map );
+    hdf5_close( h5_map_after );
+    hdf5_close( h5_fof );
 }
 
 void run_second_finder() {
@@ -166,11 +164,32 @@ void run_second_finder() {
 
 void run() {
 
-    read_fits( All.FileName );
     put_sep(0);
+    int i;
 
-    background_estimation();
-    noise_estimation();
+    read_input_fits( All.FileName );
+    writelog( 0, "read sourde data ...\n" );
+    read_fits_dbl( All.SrcFileName, &SrcData, NULL, NULL );
+    /*
+    for( i=0; i<Npixs; i++ )
+        printf( "%i", DataRaw[i] < 1e-20 ? 0 : 1 );
+    printf( "\n" );
+      */
+
+    if (  All.BkgFittingPolyOrder ) {
+        bkg_fitting();
+    }
+
+    /*
+    for( i=0; i<Npixs; i++ ) {
+        if ( SrcData[i] != 0 ) {
+           Data[i] = VInvalid;
+        }
+    }
+    */
+
+    //background_estimation();
+    //noise_estimation();
 
     return;
     run_first_finder();
@@ -192,21 +211,20 @@ void run() {
 void run_fof_only() {
 
     char buf[120];
-    read_fits( All.FileName );
+    read_input_fits( All.FileName );
     put_sep(0);
 
     pre_proc( 0 );
     XShift = YShift = SigmaClippingVmin = 0;
     Ngroup = 0;
 
-    sprintf( buf,"%s/only_fof_regs.hdf5", All.OutputDir );
-    h5_fof = H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_fof = hdf5_create( "only_fof_regs.hdf5" );
 
     group_finder();
 
     hdf5_write_attr_scalar( h5_fof, H5T_NATIVE_INT, "Ngroup", &Ngroup );
 
-    H5Fclose( h5_fof );
+    hdf5_close( h5_fof );
 
     free_fits();
 

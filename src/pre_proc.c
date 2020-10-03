@@ -53,27 +53,24 @@ void noise_estimation() {
 
     switch( All.NoiseEstInterpMethod ) {
         case 0:
-            sprintf( fn_prefix, "%s/noise_bilinear", All.OutputDir );
+            sprintf( fn_prefix, "noise_bilinear" );
             break;
         case 1:
-            sprintf( fn_prefix, "%s/noise_bicubic", All.OutputDir );
+            sprintf( fn_prefix, "noise_bicubic" );
             break;
         default:
             endrun("Failed to determine interpolation method !");
     }
 
     sprintf( fn, "%s.hdf5", fn_prefix );
-    h5_f = H5Fcreate( fn, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_f = hdf5_create( fn );
     h5_dims[0] = Height;
     h5_dims[1] = Width;
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise", Data );
 
     writelog( 0, "start noise estimation.\n" );
 
-    bkg_or_noise( All.NoiseEstm, All.NoiseEstn, All.NoiseEstN,
-                All.NoiseEstGridM, All.NoiseEstGridN,
-                All.NoiseEstInterpMethod, All.NoiseEstRSigma, All.NoiseEstMedian,
-                &Noise_s, &h, &w, &Noise );
+    bkg_or_noise( &Noise_s, &h, &w, &Noise, 1 );
 
     printf( "Noise Dim: %i x %i\n", w, h );
     find_vmin_vmax( Noise, Npixs, NULL, NULL, &vmin, &vmax );
@@ -94,7 +91,7 @@ void noise_estimation() {
     sprintf( fn, "%s_noise_s.fits", fn_prefix );
     write_fits( fn, w, h, Noise_s );
 
-    H5Fclose( h5_f );
+    hdf5_close( h5_f );
 }
 
 void background_estimation() {
@@ -107,17 +104,17 @@ void background_estimation() {
 
     switch( All.BkgEstInterpMethod ) {
         case 0:
-            sprintf( fn_prefix, "%s/bkg_bilinear", All.OutputDir );
+            sprintf( fn_prefix, "bkg_bilinear" );
             break;
         case 1:
-            sprintf( fn_prefix, "%s/bkg_bicubic", All.OutputDir );
+            sprintf( fn_prefix, "bkg_bicubic" );
             break;
         default:
             endrun("Failed to determine interpolation method !");
     }
 
     sprintf( fn, "%s.hdf5", fn_prefix );
-    h5_f = H5Fcreate( fn, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+    h5_f = hdf5_create( fn );
     h5_dims[0] = Height;
     h5_dims[1] = Width;
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise_bkg", Data );
@@ -127,10 +124,7 @@ void background_estimation() {
 
     writelog( 0, "start background estimation.\n" );
 
-    bkg_or_noise( All.BkgEstm, All.BkgEstn, All.BkgEstN,
-                All.BkgEstGridM, All.BkgEstGridN,
-                All.BkgEstInterpMethod, All.BkgEstRSigma, All.BkgEstMedian,
-                &Bkg_s, &h, &w, &Bkg );
+    bkg_or_noise( &Bkg_s, &h, &w, &Bkg, 0 );
 
     printf( "Bkg Dim: %i x %i\n", w, h );
     find_vmin_vmax( Bkg, Npixs, NULL, NULL, &vmin, &vmax );
@@ -151,16 +145,34 @@ void background_estimation() {
     sprintf( fn, "%s_bkg_s.fits", fn_prefix );
     write_fits( fn, w, h, Bkg_s );
 
-    H5Fclose( h5_f );
+    hdf5_close( h5_f );
 }
 
-void bkg_or_noise(  int m, int n, int N,
-                int GridM, int GridN,
-                int method, double RS, int median_flag,
-                double **out_s, int *h, int *w, double **out ) {
+void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
+        
+    int i, j, ii, jj, i0, j0, k, l, r, W, H, m, n, GridM, GridN, method, median_flag, N, idx;
+    double *d, sigma, mean, *data, median, *buf, S, RS;
 
-    int i, j, ii, jj, i0, j0, k, l, r, W, H;
-    double *d, sigma, mean, *data, median, *buf, S;
+    if ( mode == 0 ) {
+        m = All.BkgEstm;
+        n = All.BkgEstn;
+        N = All.BkgEstN;
+        GridM = All.BkgEstGridM;
+        GridN = All.BkgEstGridN;
+        method = All.BkgEstInterpMethod;
+        RS = All.BkgEstRSigma;
+        median_flag = All.BkgEstMedian;
+    }
+    else {
+        m = All.NoiseEstm;
+        n = All.NoiseEstn;
+        N = All.NoiseEstN;
+        GridM = All.NoiseEstGridM;
+        GridN = All.NoiseEstGridN;
+        method = All.NoiseEstInterpMethod;
+        RS = All.NoiseEstRSigma;
+        median_flag = All.NoiseEstMedian;
+    }
 
     if ( GridN == 0 )
         GridN = n;
@@ -180,17 +192,20 @@ void bkg_or_noise(  int m, int n, int N,
     else
         *h = H / GridM + 1;
 
-    d = malloc( sizeof(double) * m * n );
+    printf( "W: %i, H: %i, Grid: %i %i\n", *w, *h, GridM, GridN );
+
     buf = NULL;
     if ( median_flag )
         buf = malloc( sizeof(double) * m * n );
+
+    d = malloc( sizeof(double) * m * n );
     *out_s = malloc( sizeof(double) * (*w) * (*h) );
     *out = malloc( sizeof(double) * W * H );
 
     mytimer_start;
     writelog( 0, "do clipping ...\n" );
 
-    get_mean_sigma( data, W*H, &VInvalid, &mean, &S, &median, buf );
+    //get_mean_sigma( data, W*H, &VInvalid, &mean, &S, &median, buf );
     for( i=0; i<*h; i++ ) {
         ii = i * GridM; 
         for( j=0; j<*w; j++ ) {
@@ -205,12 +220,17 @@ void bkg_or_noise(  int m, int n, int N,
                         d[i0 * n + j0] = data[ l * W + r  ];
                 }
             for( k=0; k<N; k++ ) {
+                continue;
                 get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
-                if ( mean == VInvalid)
+                if ( mean == VInvalid) {
+                    printf( "x" );
                     break;
+                }
 
+                /*
                 if (  sigma > S )
                     sigma =  S;
+                  */
 
                 for( l=0; l<m*n; l++ ) {
                     if ( median_flag ) {
@@ -226,10 +246,16 @@ void bkg_or_noise(  int m, int n, int N,
                 }
             }
             get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
+
+            if ( mean == VInvalid ) {
+                printf( "y " );
+            }
+
             if ( median_flag )
                 (*out_s)[ i * (*w) + j ] = median;
             else
                 (*out_s)[ i * (*w) + j ] = mean;
+            //printf( "\n" );
         }
     }
 
@@ -261,6 +287,22 @@ void bkg_or_noise(  int m, int n, int N,
 
         printf( "Interpolation Method: %s. \n", gsl_spline2d_name( spline ) );
 
+        xs = malloc( sizeof(double) * (*w) );
+        ys = malloc( sizeof(double) * (*h) );
+        for( i=0; i<*w; i++ ) xs[i] = i * GridN;
+        for( i=0; i<*h; i++ ) ys[i] = i * GridM;
+
+        /*
+        double *xi, *yi;
+        xi = malloc( sizeof(double) * W * H );
+        yi = malloc( sizeof(double) * W * H );
+        for( i=0; i<H; i++ )
+            for( j=0; j<W; j++ ) {
+                xi[i*W+j] = j;
+                yi[i*W+j] = i;
+            }
+        *out = pwl_interp_2d( *w, *h, xs, ys, *out_s,  W*H, xi, yi );
+        */
         gsl_interp_accel *xacc = gsl_interp_accel_alloc();
         gsl_interp_accel *yacc = gsl_interp_accel_alloc();
         xs = malloc( sizeof(double) * (*w) );
@@ -270,9 +312,18 @@ void bkg_or_noise(  int m, int n, int N,
         gsl_spline2d_init(spline, xs, ys, *out_s, *w, *h);
 
         for( i=0; i<H; i++ ) {
+            //ii = i / GridM; 
             for( j=0; j<W; j++ ) {
                 //printf( "%i %i\n", i, j );
-                (*out)[i * W + j] = gsl_spline2d_eval(spline, j, i, xacc, yacc);
+                idx = i * W + j;
+                if ( SrcData[i] != 0 ) {
+                    (*out)[idx] = VInvalid;
+                }
+                else {
+                    (*out)[idx] = gsl_spline2d_eval(spline, j, i, xacc, yacc);
+                }
+                //jj = j / GridN; 
+                //(*out)[i * W + j] = (*out_s)[ ii * (*w) + jj ];
             }
         }
 
@@ -512,3 +563,149 @@ void pre_proc( int mode ) {
     }
     put_end(mode);
 }
+
+void bkg_fitting(){
+
+    mytimer_start;
+    int an, pn, i, j, idx, ii, jj, k, m, n, sign;
+    gsl_matrix *X, *XT, *XTX, *XTX_inv, *tmp, *beta, *XTy;
+    double *xs, *ys, s, t, a, b;
+    gsl_permutation *pm;
+
+    pn = All.BkgFittingPolyOrder;
+    an = ( pn + 2 ) * ( pn + 1 ) / 2;
+
+    X = gsl_matrix_alloc( Npixs, an );
+    XT = gsl_matrix_alloc( an, Npixs );
+    XTX = gsl_matrix_alloc( an, an );
+    XTX_inv = gsl_matrix_alloc( an, an );
+    tmp = gsl_matrix_alloc( an, an );
+    XTy = gsl_matrix_alloc( an, 1 );
+    beta = gsl_matrix_alloc( an, 1 );
+    pm = gsl_permutation_alloc(an);
+
+    xs = (double*) malloc( sizeof( double ) * (pn+1) );
+    ys = (double*) malloc( sizeof( double ) * (pn+1) );
+
+    xs[0] = ys[0] = 1;
+    a = 1;
+    b = 2;
+
+    for( i=0; i<HeightGlobal; i++ ) {
+
+        t = ((double)i) / HeightGlobal * ( b-a ) + a;
+        for( k=1; k<pn+1; k++ )
+            ys[k] = ys[k-1] * t;
+
+        for( j=0; j<WidthGlobal; j++ ) {
+
+            t = ((double)j) / WidthGlobal * (b-a) + a;
+            for( k=1; k<pn+1; k++ )
+                xs[k] = xs[k-1] * t;
+
+            m = i * WidthGlobal + j;
+            n = 0;
+            for( ii=0; ii<pn+1; ii++ )
+                for( jj=0; jj<=ii; jj++ ) {
+                    gsl_matrix_set( X, m, n, xs[jj] * ys[ii-jj] );
+                    n++;
+                }
+
+        }
+    }
+    gsl_matrix_transpose_memcpy( XT, X );
+
+    /*
+    for( i=0; i<Npixs; i++ )
+        for( j=0; j<an; j++ )
+            printf( "(%i, %i): %g\n", i, j, gsl_matrix_get( X, i, j ) );
+    for( i=0; i<an; i++ )
+        for( j=0; j<Npixs; j++ )
+            printf( "(%i, %i): %g\n", i, j, gsl_matrix_get( XT, i, j ) );
+      */
+
+    for( i=0; i<an; i++ )
+        for( j=0; j<an; j++ ){
+            s = 0;
+            for( k=0; k<Npixs; k++ )
+                s += gsl_matrix_get( XT, i, k ) * gsl_matrix_get( XT, j, k );
+            //printf( "(%i, %i): %g\n", i, j, s );
+            gsl_matrix_set( XTX, i, j, s );
+        }
+
+    gsl_matrix_memcpy(tmp, XTX);
+    sign = 0;
+    gsl_linalg_LU_decomp(tmp, pm, &sign);
+    gsl_linalg_LU_invert(tmp, pm, XTX_inv);
+
+    /*
+    for( i=0; i<an; i++ ) {
+        for( j=0; j<an; j++ ){
+            s = 0;
+            for( k=0; k<an; k++ )
+                s += gsl_matrix_get( XTX_inv, i, k ) * gsl_matrix_get( XTX, k, j );
+            printf( "%.1e ", s );
+        }
+        printf( "\n" );
+    }
+      */
+    for( i=0; i<an; i++ ) {
+        s = 0;
+        for( j=0; j<Npixs; j++ )
+            s += gsl_matrix_get( XT, i, j ) * DataRaw[j];
+        gsl_matrix_set( XTy, i, 0, s );
+    }
+
+    for( i=0; i<an; i++ ) {
+        s = 0;
+        for( j=0; j<an; j++ ) 
+            s += gsl_matrix_get( XTX_inv, i, j ) * gsl_matrix_get( XTy, j, 0 );
+        gsl_matrix_set( beta, i, 0, s );
+    }
+
+    /*
+    for( i=0; i<an; i++ )
+        printf( "%g \n", gsl_matrix_get( beta, i, 0 ) );
+     * */
+
+    Bkg = ( double * ) malloc( sizeof(double) * Npixs );
+
+    xs[0] = ys[0] = 1;
+    for( i=0; i<HeightGlobal; i++ ) {
+
+        t = ((double)i) / HeightGlobal * ( b-a ) + a;
+        for( k=1; k<pn+1; k++ )
+            ys[k] = ys[k-1] * t;
+
+        for( j=0; j<WidthGlobal; j++ ) {
+
+            t = ((double)j) / WidthGlobal * (b-a) + a;
+            for( k=1; k<pn+1; k++ )
+                xs[k] = xs[k-1] * t;
+
+            m = i * WidthGlobal + j;
+            s = 0;
+            n = 0;
+            for( ii=0; ii<pn+1; ii++ )
+                for( jj=0; jj<=ii; jj++ ) {
+                    s += xs[jj] * ys[ii-jj] * gsl_matrix_get( beta, n, 0 );
+                    n++;
+                }
+            Bkg[m] = s;
+        }
+    }
+
+    write_fits( "bkg_fitting.fits", WidthGlobal, HeightGlobal, Bkg );
+
+
+    gsl_matrix_free( X );
+    gsl_matrix_free( XT );
+    gsl_matrix_free( XTX );
+    gsl_matrix_free( XTX_inv );
+    gsl_matrix_free( XTy );
+    gsl_matrix_free( beta );
+    gsl_matrix_free(tmp);
+    gsl_permutation_free(pm);
+    mytimer_end;
+}
+

@@ -6,6 +6,16 @@
 #include "allvars.h"
 
 hid_t h5_dsp, h5_attr, h5_ds;
+
+hid_t hdf5_create( char *fn ) {
+    char buf[300];
+    sprintf( buf, "%s/%s", All.OutputDir, fn );
+    return H5Fcreate( buf, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT );
+}
+
+void hdf5_close( hid_t h5 ) {
+     H5Fclose( h5 );
+}
 void hdf5_write_attr_scalar(
         hid_t h5_obj, 
         hid_t h5_type,

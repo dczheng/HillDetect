@@ -26,3 +26,5 @@ chanvese/
 __pycache__/
 *.in
 data/*
+test/
+other*/

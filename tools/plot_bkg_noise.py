@@ -63,6 +63,6 @@ for i in range(len(data_name)):
     else:
         ax.set_title( "%s(%s)"%(data_name[i], interp_name[params['NoiseEstInterpMethod']]) )
 
-fn = os.path.join( output_dir, "bkg_noise.png" )
+fn = os.path.realpath(os.path.join( output_dir, "bkg_noise.png" ))
 print( "save %s"%fn )
 fig.savefig( fn, dpi=300  )
