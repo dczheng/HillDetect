@@ -47,13 +47,14 @@ typedef struct GlobalParams {
          LsetPixMin, SecondFinderPixMin, OnlyFoFPixMin,
          BkgEstGridM, BkgEstGridN,
          BkgEstm, BkgEstn,
-         BkgEstMedian,
          BkgEstN, BkgEstInterpMethod,
          NoiseEstGridM, NoiseEstGridN,
          NoiseEstm, NoiseEstn,
-         NoiseEstMedian,
          NoiseEstN, NoiseEstInterpMethod,
          BkgFittingPolyOrder, 
+         BkgFittingM, 
+         BkgFittingN, 
+         BkgFittingPadding, 
          DisableSecondFinder, SecondFinderPad, OnlyFoF;
     double  Mu, Nu, Tol, Lambda1, Lambda2, TimeStep,
             BkgEstRSigma,
@@ -61,6 +62,7 @@ typedef struct GlobalParams {
             NoiseEstRSigma,
             RSigma, RSigma1,
             CuttingXStart, CuttingXEnd,
+            BkgRSigmaBeforeFitting,
             CuttingYStart, CuttingYEnd, Beam; 
 
 }GlobalParams;

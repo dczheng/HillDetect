@@ -165,28 +165,25 @@ void run_second_finder() {
 void run() {
 
     put_sep(0);
-    int i;
 
     read_input_fits( All.FileName );
     writelog( 0, "read sourde data ...\n" );
     read_fits_dbl( All.SrcFileName, &SrcData, NULL, NULL );
-    /*
-    for( i=0; i<Npixs; i++ )
-        printf( "%i", DataRaw[i] < 1e-20 ? 0 : 1 );
-    printf( "\n" );
-      */
 
     if (  All.BkgFittingPolyOrder ) {
-        bkg_fitting();
-    }
+        double bkg_params[5];
+        bkg_params[0] = All.BkgFittingPolyOrder;
+        bkg_params[1] = All.BkgFittingM;
+        bkg_params[2] = All.BkgFittingN;
+        bkg_params[3] = All.BkgFittingPadding;
+        bkg_params[4] = All.BkgRSigmaBeforeFitting;
+        Bkg = background( DataRaw, HeightGlobal, WidthGlobal, 0, bkg_params);
 
-    /*
-    for( i=0; i<Npixs; i++ ) {
-        if ( SrcData[i] != 0 ) {
-           Data[i] = VInvalid;
-        }
+        if ( NULL == Bkg )
+            endrun( "failed to estimate background!\n" );
+
+        write_fits( "bkg.fits", WidthGlobal, HeightGlobal, Bkg );
     }
-    */
 
     //background_estimation();
     //noise_estimation();
@@ -210,7 +207,6 @@ void run() {
 
 void run_fof_only() {
 
-    char buf[120];
     read_input_fits( All.FileName );
     put_sep(0);
 

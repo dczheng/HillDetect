@@ -8,41 +8,6 @@
 double RSigma;
 int LogNorm;
 
-void sigma_clipping( double sigma, double mean, int flag ) {
-
-    int i;
-    double vmin, vcut, vmax, rms, vmin_p;
-
-    vmin = 1e30;
-    vmin_p = 1e30;
-    vmax = -vmin;
-    for( i=0; i<Npixs; i++ ) {
-        vmin = ( Data[i] < vmin ) ? Data[i] : vmin;
-        vmax = ( Data[i] > vmax ) ? Data[i] : vmax;
-
-        if ( Data[i] > 0 )
-            vmin_p = ( Data[i] < vmin_p ) ? Data[i] : vmin_p;
-    }
-
-    if ( sigma == 0 ) {
-        get_mean_sigma_rms( Data, NULL, Npixs, &mean, &sigma, &rms );
-    }
-
-    vcut = mean + RSigma * sigma;
-    //printf( "%g %g %g %g\n", mean, RSigma, sigma, vcut );
-    //vcut = 1e-11;
-
-    for( i=0; i<Npixs; i++ ) {
-        if ( Data[i] < vcut )
-            Data[i] = vcut; 
-    }
-
-    writelog( flag, "vmin: %g, vmin[+]: %g, vmax: %g\n"
-            "Rsigma: %g, mean: %g, sigma: %g, vcut: %g\n",
-            vmin, vmin_p, vmax, RSigma, mean, sigma, vcut );
-    SigmaClippingVmin = vcut;
-}
-
 void noise_estimation() {
 
     double vmin, vmax;
@@ -73,7 +38,7 @@ void noise_estimation() {
     bkg_or_noise( &Noise_s, &h, &w, &Noise, 1 );
 
     printf( "Noise Dim: %i x %i\n", w, h );
-    find_vmin_vmax( Noise, Npixs, NULL, NULL, &vmin, &vmax );
+    find_vmin_vmax( Noise, Npixs, &vmin, &vmax );
     printf( "[Noise] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "noise", Noise );
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src", Data );
@@ -127,7 +92,7 @@ void background_estimation() {
     bkg_or_noise( &Bkg_s, &h, &w, &Bkg, 0 );
 
     printf( "Bkg Dim: %i x %i\n", w, h );
-    find_vmin_vmax( Bkg, Npixs, NULL, NULL, &vmin, &vmax );
+    find_vmin_vmax( Bkg, Npixs, &vmin, &vmax );
     printf( "[BKG] vmin: %.3e, vmax: %.3e\n", vmin, vmax );
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "bkg", Bkg );
     hdf5_write_data( h5_f, H5T_NATIVE_DOUBLE, h5_dims, 2, "src_noise", Data );
@@ -150,6 +115,7 @@ void background_estimation() {
 
 void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
         
+    /*
     int i, j, ii, jj, i0, j0, k, l, r, W, H, m, n, GridM, GridN, method, median_flag, N, idx;
     double *d, sigma, mean, *data, median, *buf, S, RS;
 
@@ -205,7 +171,6 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
     mytimer_start;
     writelog( 0, "do clipping ...\n" );
 
-    //get_mean_sigma( data, W*H, &VInvalid, &mean, &S, &median, buf );
     for( i=0; i<*h; i++ ) {
         ii = i * GridM; 
         for( j=0; j<*w; j++ ) {
@@ -221,16 +186,11 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
                 }
             for( k=0; k<N; k++ ) {
                 continue;
-                get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
+                get_statistic_quantities( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
                 if ( mean == VInvalid) {
                     printf( "x" );
                     break;
                 }
-
-                /*
-                if (  sigma > S )
-                    sigma =  S;
-                  */
 
                 for( l=0; l<m*n; l++ ) {
                     if ( median_flag ) {
@@ -245,7 +205,7 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
                     }
                 }
             }
-            get_mean_sigma( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
+            get_statistic_quantities( d, m*n, &VInvalid, &mean, &sigma, &median, buf );
 
             if ( mean == VInvalid ) {
                 printf( "y " );
@@ -255,7 +215,6 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
                 (*out_s)[ i * (*w) + j ] = median;
             else
                 (*out_s)[ i * (*w) + j ] = mean;
-            //printf( "\n" );
         }
     }
 
@@ -292,17 +251,6 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
         for( i=0; i<*w; i++ ) xs[i] = i * GridN;
         for( i=0; i<*h; i++ ) ys[i] = i * GridM;
 
-        /*
-        double *xi, *yi;
-        xi = malloc( sizeof(double) * W * H );
-        yi = malloc( sizeof(double) * W * H );
-        for( i=0; i<H; i++ )
-            for( j=0; j<W; j++ ) {
-                xi[i*W+j] = j;
-                yi[i*W+j] = i;
-            }
-        *out = pwl_interp_2d( *w, *h, xs, ys, *out_s,  W*H, xi, yi );
-        */
         gsl_interp_accel *xacc = gsl_interp_accel_alloc();
         gsl_interp_accel *yacc = gsl_interp_accel_alloc();
         xs = malloc( sizeof(double) * (*w) );
@@ -342,6 +290,7 @@ void bkg_or_noise( double **out_s, int *h, int *w, double **out, int mode ) {
 
     mytimer;
     mytimer_end;
+      */
 
 }
 
@@ -523,7 +472,7 @@ void pre_proc( int mode ) {
 
         if ( All.SigmaClipping ) {
             RSigma = All.RSigma;
-            sigma_clipping(0, 0, 0);
+            //sigma_clipping(0, 0, 0);
         }
 
         LogNorm = All.LogNorm;
@@ -558,125 +507,8 @@ void pre_proc( int mode ) {
             get_mean_sigma_rms( Data, flag, Npixs,  mean, sigma, rms );
             free( flag );
             RSigma = All.RSigma1;
-            sigma_clipping( sigma[0], mean[0], 1);
+            //sigma_clipping( sigma[0], mean[0], 1);
         }
     }
     put_end(mode);
 }
-
-void bkg_fitting(){
-
-    mytimer_start;
-    int an, pn, i, j, idx, ii, jj, k, m, n, sign;
-    gsl_matrix *XTX, *XTX_inv, *tmp;
-    double *xs, *ys, s, t, a, b, *xt, *xty, *as;
-    gsl_permutation *pm;
-
-    pn = All.BkgFittingPolyOrder;
-    an = ( pn + 2 ) * ( pn + 1 ) / 2;
-
-    xt = malloc( sizeof(double) * Npixs * an );
-    xty = malloc( sizeof(double) * an );
-    as = malloc( sizeof(double) * an );
-
-    XTX = gsl_matrix_alloc( an, an );
-    XTX_inv = gsl_matrix_alloc( an, an );
-    tmp = gsl_matrix_alloc( an, an );
-    pm = gsl_permutation_alloc(an);
-
-    xs = (double*) malloc( sizeof( double ) * (pn+1) );
-    ys = (double*) malloc( sizeof( double ) * (pn+1) );
-
-    xs[0] = ys[0] = 1;
-    a = 1;
-    b = 2;
-
-    for( i=0; i<HeightGlobal; i++ ) {
-
-        t = ((double)i) / HeightGlobal * ( b-a ) + a;
-        for( k=1; k<pn+1; k++ )
-            ys[k] = ys[k-1] * t;
-
-        for( j=0; j<WidthGlobal; j++ ) {
-
-            t = ((double)j) / WidthGlobal * (b-a) + a;
-            for( k=1; k<pn+1; k++ )
-                xs[k] = xs[k-1] * t;
-
-            m = i * WidthGlobal + j;
-            n = 0;
-            for( ii=0; ii<pn+1; ii++ )
-                for( jj=0; jj<=ii; jj++ ) {
-                    xt[ n * Npixs + m ] = xs[jj] * ys[ii-jj];
-                    n++;
-                }
-
-        }
-    }
-
-    for( i=0; i<an; i++ )
-        for( j=0; j<an; j++ ){
-            s = 0;
-            for( k=0; k<Npixs; k++ )
-                s += xt[ i * Npixs + k ] * xt[ j * Npixs + k ];
-            gsl_matrix_set( XTX, i, j, s );
-        }
-
-    gsl_matrix_memcpy(tmp, XTX);
-    sign = 0;
-    gsl_linalg_LU_decomp(tmp, pm, &sign);
-    gsl_linalg_LU_invert(tmp, pm, XTX_inv);
-
-    for( i=0; i<an; i++ ) {
-        s = 0;
-        for( j=0; j<Npixs; j++ )
-            s += xt[ i * Npixs + j ] * DataRaw[j];
-        xty[i] = s;
-    }
-
-    for( i=0; i<an; i++ ) {
-        s = 0;
-        for( j=0; j<an; j++ ) 
-            s += gsl_matrix_get( XTX_inv, i, j ) * xty[j];
-        as[i] = s;
-    }
-
-    Bkg = ( double * ) malloc( sizeof(double) * Npixs );
-
-    xs[0] = ys[0] = 1;
-    for( i=0; i<HeightGlobal; i++ ) {
-
-        t = ((double)i) / HeightGlobal * ( b-a ) + a;
-        for( k=1; k<pn+1; k++ )
-            ys[k] = ys[k-1] * t;
-
-        for( j=0; j<WidthGlobal; j++ ) {
-
-            t = ((double)j) / WidthGlobal * (b-a) + a;
-            for( k=1; k<pn+1; k++ )
-                xs[k] = xs[k-1] * t;
-
-            m = i * WidthGlobal + j;
-            s = 0;
-            n = 0;
-            for( ii=0; ii<pn+1; ii++ )
-                for( jj=0; jj<=ii; jj++ ) {
-                    s += xs[jj] * ys[ii-jj] * as[n];
-                    n++;
-                }
-            Bkg[m] = s;
-        }
-    }
-
-    write_fits( "bkg_fitting.fits", WidthGlobal, HeightGlobal, Bkg );
-
-    free( xt );
-    free( xty );
-    free( as );
-    gsl_matrix_free( XTX );
-    gsl_matrix_free( XTX_inv );
-    gsl_matrix_free(tmp);
-    gsl_permutation_free(pm);
-    mytimer_end;
-}
-
