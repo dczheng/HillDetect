@@ -228,7 +228,6 @@ void run_fof_only() {
 
 int main( int argc, char **argv ) {
 
-    char buf[120];
     memset( sep_str, '-', SEP_LEN-2 );
     sep_str[ SEP_LEN-2 ] = '\n';
     sep_str[ SEP_LEN-1 ] = '\0';
@@ -241,9 +240,9 @@ int main( int argc, char **argv ) {
 
     InputBaseName = basename( All.FileName );
     create_dir( All.OutputDir );
-    sprintf( buf, "%s/%s", All.OutputDir, InputBaseName );
-    sprintf( All.OutputDir, "%s", buf );
-    create_dir(buf);
+    strcat( All.OutputDir, "/" );
+    strcat( All.OutputDir, InputBaseName );
+    create_dir(All.OutputDir);
 
     if ( All.OnlyFoF )
         run_fof_only();

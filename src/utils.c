@@ -118,7 +118,7 @@ double sigma_clipping( double *data, int N, double R ) {
 
 double *poly_2d_fitting( double *x, double *y, double *z, int nz, int M, int N, int pn) {
 
-    int an, i, j, idx, ii, jj, k, m, n, sign;
+    int an, i, j, ii, jj, k, m, n, sign;
     gsl_matrix *XTX, *XTX_inv, *tmp;
     double *xs, *ys, s, t, a, b, *xt, *xty, *as, *fitting, *data, vmin, vmax, z1, z2, b_a, z2_z1, vmax_vmin;
     gsl_permutation *pm;
