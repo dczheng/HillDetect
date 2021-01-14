@@ -9,7 +9,7 @@ data_fits/
 bin/
 *dat
 *txt
-*fits*
+*fits
 *reg
 add_params.h
 allvars.c
